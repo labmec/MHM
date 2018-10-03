@@ -78,6 +78,10 @@ add_executable(MHM main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp me
 
 target_link_libraries(MHM pz)
 
+add_executable(MHMMaze main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
+
+target_link_libraries(MHMMaze pz)
+
 add_executable(MHMElast mainElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
 target_link_libraries(MHMElast pz)
