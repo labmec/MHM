@@ -25,6 +25,7 @@ IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
+       find_package(OpenCV REQUIRED)
 ENDIF (WIN32)
 
 IF(APPLE)
@@ -80,7 +81,7 @@ target_link_libraries(MHM pz)
 
 add_executable(MHMMaze main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
-target_link_libraries(MHMMaze pz)
+target_link_libraries(MHMMaze pz ${OpenCV_LIBS})
 
 add_executable(MHMElast mainElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
