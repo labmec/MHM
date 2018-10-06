@@ -6,6 +6,7 @@
 #include "tpzautopointer.h"
 #include "pzcmesh.h"
 #include "pzfunction.h"
+#include "pzcompel.h"
 
 #include <string>
 
@@ -92,6 +93,138 @@ struct TAnalyticSolution
         
     }
 };
+
+#include <iostream>
+#include <boost/numeric/odeint.hpp>       // odeint function definitions
+
+using namespace boost::numeric::odeint;
+
+// Defining a shorthand for the type of the mathematical state
+typedef std::vector< double > state_type;
+
+//static TPZManVector<REAL,3> g_qsi(2.0);
+//static int64_t g_elindex;
+//static TPZGeoMesh *g_gmesh = 0;
+
+struct TStreamLinePoint
+{
+    TPZManVector<REAL,4> fx;
+    REAL fTime;
+    TStreamLinePoint(): fx(4,0.), fTime(0.) {}
+    TStreamLinePoint(const TStreamLinePoint &cp) : fx(cp.fx), fTime(cp.fTime){}
+    TStreamLinePoint &operator=(const TStreamLinePoint &cp)
+    {
+        fx = cp.fx;
+        fTime = cp.fTime;
+        return *this;
+    }
+};
+
+struct TStreamLine
+{
+    TPZGeoMesh *fGMesh;
+    TPZManVector<REAL,3> fQsi;
+    int64_t fElIndex;
+    int fVarIndex = 0;
+    
+    TStreamLine() : fGMesh(0), fQsi(0), fElIndex(0), fVarIndex(0) {}
+    
+    TStreamLine(TPZGeoMesh *gmesh) : fGMesh(gmesh), fElIndex(0)
+    {
+        fQsi.resize(gmesh->Dimension());
+    }
+    
+    TStreamLine(const TStreamLine &cp) : fGMesh(cp.fGMesh), fQsi(cp.fQsi), fElIndex(cp.fElIndex),
+    fVarIndex(cp.fVarIndex) {}
+    
+    TStreamLine &operator=(const TStreamLine &cp)
+    {
+        fGMesh = cp.fGMesh;
+        fQsi = cp.fQsi;
+        fElIndex = cp.fElIndex;
+        fVarIndex = cp.fVarIndex;
+        return *this;
+    }
+    
+    void operator()(const state_type &x , state_type &dxdt , const double t )
+    {
+        
+        //    std::cout << "x = " << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << std::endl;
+        TPZManVector<REAL,3> xel(3,0.);
+        for(int i=0; i<3; i++) xel[i] = x[i];
+        TPZGeoEl *gel = fGMesh->FindElementCaju(xel, fQsi, fElIndex, 2);
+        //    std::cout << " elindex " << g_elindex << " qsi " << g_qsi << std::endl;
+        if(gel)
+        {
+            TPZCompEl *cel = gel->Reference();
+            TPZManVector<STATE,3> flux(3,0.);
+            cel->Solution(fQsi, fVarIndex, flux);
+            //    std::cout << " flux " << flux << std::endl;
+            REAL fluxnorm = sqrt(flux[0]*flux[0]+flux[1]*flux[1]+flux[2]*flux[2]);
+            if(fluxnorm > 1.e-8)
+            {
+                for(int i=0; i<3; i++) dxdt[i] = flux[i] / fluxnorm;
+                dxdt[3] = 1./fluxnorm;
+            }
+            else
+            {
+                for(int i=0; i<3; i++) dxdt[i] = flux[i];
+                dxdt[3] = 0.;
+            }
+        }
+        else
+        {
+            for(int i=0; i<4; i++) dxdt[i] = 0.;
+        }
+    }
+
+    
+};
+
+struct TStreamLineData
+{
+    std::shared_ptr<TPZStack<TStreamLinePoint>> fStreamLine;
+    
+    TStreamLineData() : fStreamLine(new TPZStack<TStreamLinePoint>){}
+    
+    TStreamLineData(const TStreamLineData &cp) : fStreamLine(cp.fStreamLine){}
+    
+    TStreamLineData &operator=(const TStreamLineData &cp){
+        fStreamLine = cp.fStreamLine;
+        return *this;
+    }
+    
+    void operator()( const state_type &x, const double t )
+    {
+        TStreamLinePoint pt;
+        for(int i=0; i<4; i++) pt.fx[i] = x[i];
+        pt.fTime = t;
+        std::cout << "Adding time " << t << " x " << pt.fx << " size " << fStreamLine->size() << std::endl;
+        fStreamLine->Push(pt);
+    }
+    
+    void Print(std::ostream &out)
+    {
+        for(int i=0; i<fStreamLine->size(); i++)
+        {
+            out << " time " << (*fStreamLine)[i].fTime << " x " << (*fStreamLine)[i].fx << std::endl;
+        }
+    }
+    
+    operator TPZFMatrix<REAL> (){
+        TPZFMatrix<REAL> result(fStreamLine->size(),5);
+        for(int i=0; i<fStreamLine->size(); i++)
+        {
+            result(i,0) = (*fStreamLine)[i].fTime;
+            for(int ic = 0; ic<4; ic++) result(i,ic+1) = (*fStreamLine)[i].fx[ic];
+        }
+        return result;
+    }
+};
+
+TPZGeoEl *FindEntry(TPZGeoMesh *gmesh);
+
+TStreamLineData ComputeStreamLine(TPZCompMesh *fluxmesh, TPZVec<REAL> &xco);
 
 #ifdef _AUTODIFF
 
