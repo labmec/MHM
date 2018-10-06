@@ -649,8 +649,6 @@ TPZCompMesh *CMeshMultphysics(TPZGeoMesh * gmesh, TPZVec<TPZCompMesh *> meshvec)
     mphysics->InsertMaterialObject(mat_1);
     
     //Inserir condicoes de contorno
-    
-    
     int type_D = 0;
     int type_N = 1;
     TPZFMatrix<STATE> val1(1, 1, 0.), val2(1, 1, 0.);
@@ -704,7 +702,7 @@ TPZCompMesh *CMeshMultphysics(TPZGeoMesh * gmesh, TPZVec<TPZCompMesh *> meshvec)
     
     return mphysics;
 }
-TPZGeoMesh *GeoMeshCoarse(TPZGeoMesh *GeoMesh, double l, double h, int nx, int ny){
+TPZGeoMesh *GeoMeshCoarse(double l, double h, int nx, int ny){
     const int bcDL = -1;
     const int bcB = -2;
     const int bcDR = -3;
@@ -723,12 +721,13 @@ TPZGeoMesh *GeoMeshCoarse(TPZGeoMesh *GeoMesh, double l, double h, int nx, int n
     gengrid.Read(gmesh);
     //gengrid.Read(gmesh,2);
 
-//    TPZVec<TPZGeoEl *> new_elems;
-//    gmesh->Element(0)->Divide(new_elems);
-//    for (auto &elem : new_elems) {
-//        TPZVec<TPZGeoEl *> new_elems2;
-//        elem->Divide(new_elems2);
-//    }
+    
+    //gengrid.SetBC(TPZGeoMesh *gr, int side, int bc)
+    gengrid.SetBC(gmesh, 4, bcDL);
+    gengrid.SetBC(gmesh, 5, bcB);
+    gengrid.SetBC(gmesh, 6, bcDR);
+    gengrid.SetBC(gmesh, 7, bcDT);
+    
     gmesh->BuildConnectivity();
     return gmesh;
 }
@@ -747,8 +746,7 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
     
     REAL conv=0;
     TPZVec<REAL> convdir(dim,0.0);
-    
-  
+
     cmesh->SetDimModel(dim);
     
     TPZMatPoisson3d *mat_0 = new TPZMatPoisson3d(impervious_mat,dim);
@@ -759,12 +757,43 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
     //  inserting volumetric materials objects
     cmesh->InsertMaterialObject(mat_0);
     cmesh->InsertMaterialObject(mat_1);
+    
+    //Inserir condicoes de contorno
+    int type_D = 0;
+    int type_N = 1;
+    TPZFMatrix<STATE> val1(1, 1, 0.), val2(1, 1, 0.);
+    
+    // Insert boundary conditions
+    //Neumann boundary conditions (flux = 0)
+    int right_bc_id = -2;
+    val2(0,0) = 0.0;
+    TPZMaterial * right_bc = mat_0->CreateBC(mat_0, right_bc_id, type_N, val1, val2);
+    cmesh->InsertMaterialObject(right_bc);
+    
+    
+    int left_bc_id = -4;
+    val2(0,0) = 0.0;
+    TPZMaterial * left_bc = mat_0->CreateBC(mat_0, left_bc_id, type_N, val1, val2);
+    cmesh->InsertMaterialObject(left_bc);
+    
+    int bottom_bc_1id = -1;
+    val2(0,0) = 0;
+    TPZMaterial * bottom_bc_1 = mat_0->CreateBC(mat_0, bottom_bc_1id, type_N, val1, val2);
+    cmesh->InsertMaterialObject(bottom_bc_1);
+    
+    int top_bc_1id = -3;
+    val2(0,0) = 0.0;
+    TPZMaterial * top_bc_1 = mat_0->CreateBC(mat_0, top_bc_1id, type_N, val1, val2);
+    cmesh->InsertMaterialObject(top_bc_1);
+    
+    
     cmesh->AutoBuild();
+    
+    
+    
+    //Refine
     TPZVec<REAL> qsi(3,0);
     TPZVec<REAL> result(3,0);
-    
-   
-
     TPZStack<TPZVec<int64_t>> vecs;
     TPZVec<int64_t> indexf;
     for(int i=0; i<nref; i++){
@@ -777,12 +806,21 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
         }
     }
     
-
+    //
+    
+    
+    
+    
+    
+    
     
    int nel = cmesh->NElements();
+    
     for(int i=0; i<nel; i++){
+      
         if (cmesh->Element(i)){
             TPZGeoEl *gel = cmesh->Element(i)->Reference();
+            if(gel->Dimension()==2){
             TPZFMatrix<REAL> cooridnates1(3,4);
             TPZVec<REAL> qsi(3,0);
             TPZVec<REAL> result(3,0);
@@ -790,13 +828,26 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
             int flor =floor(result[0]);
             int y =floor(result[1])*8;
             int pos = flor + y;
-            for(int j=0; j<nel; j++){
-                TPZGeoEl *gel2 = GeoMeshFine->Element(pos);
-                int matid= gel2->MaterialId();
-                gel->SetMaterialId(matid);
+            TPZGeoEl *gel2 = GeoMeshFine->Element(pos);
+            int matid= gel2->MaterialId();
+            gel->SetMaterialId(matid);
+                if(y==0 && matid==2){
+                    TPZGeoEl *el1D = gel->Neighbour(4).Element();
+                    el1D->SetMaterialId(-5);
+                }
+                int niv =y/8;
+                if(niv==7 && matid==2){
+                    TPZGeoEl *el1D = gel->Neighbour(6).Element();
+                    el1D->SetMaterialId(-6);
+                }
+                
             }
+        
         }
     }
+    
+    std::ofstream out2("mazehmhmTT.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(GeoMeshCoarse, out2, true);
     
     TPZVec<int64_t> subindex;
 //    cmesh->Element(0)->Divide(0,subindex );
@@ -821,11 +872,12 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
 int MHMTest(){
     
     TPZGeoMesh *gmesh = GeoMeshFromPng("maze8x8.png");
-    TPZGeoMesh *gmeshMHM = GeoMeshCoarse(gmeshMHM, 8, 8, 2, 2);
+    TPZGeoMesh *gmeshMHM = GeoMeshCoarse(8, 8, 2, 2);
     TPZCompMesh *cmesh = CmeshMHM(gmeshMHM,gmesh,2);
     std::ofstream out("mazehmhm.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmeshMHM, out, true);
     std::ofstream out2("mazeh.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmesh, out2, true);
+    
     return 0;
 }
