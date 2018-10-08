@@ -93,20 +93,21 @@ int MixedTest();
 int MHMTest();
 
 int main(){
+    InitializePZLOG();
     TPZGeoMesh *gmsh;
     TPZGeoMesh *gmsh2;
     TPZCompMesh *cmesh;
 
     
-    MHMTest();
+//    MHMTest();
 //    H1Test();
-//    MixedTest();
+    MixedTest();
     return 0;
 }
 
 int MixedTest(){
     
-    TPZGeoMesh *gmesh = GeoMeshFromPng("MAZETEST.png");
+    TPZGeoMesh *gmesh = GeoMeshFromPng("../small.png");
     int flux_order = 1;
     int p_order = 1;
     
@@ -136,8 +137,6 @@ int MixedTest(){
     
     std::ofstream out("MixedCMesh.txt");
     //    MixedMesh->Print(out);
-    
-    
     
     std::cout << "number of equations = " << MixedMesh->NEquations() << std::endl;
     
@@ -193,6 +192,43 @@ int MixedTest(){
     an->DefineGraphMesh(dim,scalnames,vecnames,"hdiv.vtk");
     an->PostProcess(div,dim);
     std::cout << "Standard post-processing finished." << std::endl;
+    TPZBuildMultiphysicsMesh::TransferFromMultiPhysics(meshvector_Hybrid, cmesh_m_Hybrid);
+
+    {
+        std::ofstream out("cmeshHybrid.txt");
+        cmesh_m_Hybrid->Print(out);
+    }
+//    meshvector_Hybrid[0]->Solution().Print("flux",std::cout);
+    {
+        std::ofstream FileStreamLines("StreamLines.nb");
+        TPZStack<TPZFMatrix<REAL>> streamlines;
+        TPZManVector<REAL,3> x(3,0.);
+        gmesh->ResetReference();
+        meshvector_Hybrid[0]->LoadReferences();
+        TPZGeoEl *gelentry = FindEntry(gmesh);
+        TPZManVector<REAL,3> xi(1,0.), xco(3,0.);
+        for(int i=0; i<5; i++)
+        {
+            for(int j=0; j<2; j++)
+            {
+                if(j==1 && i==0) continue;
+                xi[0] = pow(i/5.,0.25);
+                if(j==1) xi[0] *= -1.;
+                TPZStack<TStreamLine> streamstack;
+                gelentry->X(xi, xco);
+                TStreamLineData result;
+                result = ComputeStreamLine(meshvector_Hybrid[0], xco);
+                TPZFMatrix<REAL> res = result;
+                streamlines.Push(res);
+            }
+        }
+        FileStreamLines << "AllStream = Table[0,{" << streamlines.size() << "}];\n";
+        for (int i=0; i<streamlines.size(); i++) {
+            FileStreamLines << "AllStream[[" << i+1 << "]] =";
+            streamlines[i].Print("",FileStreamLines,EMathematicaInput);
+        }
+    }
+
     
     return 0;
 }
@@ -349,10 +385,8 @@ TPZCompMesh *CMeshFlux(TPZGeoMesh * gmesh,int pOrder){
     
     //Definition of the approximation space:
     
-    TPZMatPoisson3d *mat_0 = new TPZMatPoisson3d(impervious_mat,dim);
-    TPZMatPoisson3d *mat_1 = new TPZMatPoisson3d(permeable_mat,dim);
-    mat_0->SetParameters(perm_0, conv, convdir);
-    mat_1->SetParameters(perm_1, conv, convdir);
+    TPZVecL2 *mat_0 = new TPZVecL2(impervious_mat);
+    TPZVecL2 *mat_1 = new TPZVecL2(permeable_mat);
     
     //  inserting volumetric materials objects
     cmesh->InsertMaterialObject(mat_0);

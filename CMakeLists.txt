@@ -77,7 +77,7 @@ endif()
 
 add_executable(MHM main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
-target_link_libraries(MHM pz)
+target_link_libraries(MHM pz ${OpenCV_LIBS})
 
 add_executable(MHMMaze main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 

@@ -932,3 +932,42 @@ void SolveParabolic(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZ
     }
 }
 
+int mainxx();
+
+TPZGeoEl *FindEntry(TPZGeoMesh *gmesh)
+{
+    int64_t nelem = gmesh->NElements();
+    for (int64_t el=0; el<nelem; el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
+        if(gel && gel->MaterialId() == -5)
+        {
+            return gel;
+        }
+    }
+    return 0;
+}
+
+
+
+
+
+TStreamLineData ComputeStreamLine(TPZCompMesh *fluxmesh, TPZVec<REAL> &startx)
+{
+
+    TPZGeoMesh *gmesh = fluxmesh->Reference();
+    if(gmesh->Reference() != fluxmesh) DebugStop();
+    TStreamLine streamline(gmesh);
+    state_type x0(4,0.); // Initial condition, vector of 1 element (scalar problem)
+    for(int i=0; i<3; i++) x0[i] = startx[i];
+    
+    // Integration parameters
+    double t0 = 0.0;
+    double t1 = 50.;
+    double dt = 0.5;
+    
+    TStreamLineData observer;
+    // Run integrator
+    integrate( streamline, x0, t0, t1, dt, observer );
+    
+    return observer;
+}
