@@ -1,7 +1,8 @@
 #ifdef HAVE_CONFIG_H
 #include <pz_config.h>
 #endif
-
+#include <iostream>
+#include <fstream>
 #include "pzvec.h"
 #include "pzstack.h"
 #include "pzfmatrix.h"
@@ -107,7 +108,7 @@ int main(){
 
 int MixedTest(){
     
-    TPZGeoMesh *gmesh = GeoMeshFromPng("../small.png");
+    TPZGeoMesh *gmesh = GeoMeshFromPng("small.png");
     int flux_order = 1;
     int p_order = 1;
     
