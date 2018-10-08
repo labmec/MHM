@@ -774,11 +774,7 @@ TPZCompMesh *CmeshMHM(TPZGeoMesh *GeoMeshCoarse, TPZGeoMesh *GeoMeshFine, int nr
     
     //
     
-    
-    
-    
-    
-    
+
     
    int nel = cmesh->NElements();
     
