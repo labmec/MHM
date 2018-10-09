@@ -802,7 +802,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         vecnames.Push("Derivative");
     }
     
-#ifdef QuietMode
+#ifndef QuietMode
 //    an.DefineGraphMesh(cmesh->Dimension()-1, scalnames, vecnames, plotfile1);
     an.DefineGraphMesh(cmesh->Dimension(), scalnames, vecnames, plotfile2);
     int resolution = 0;
