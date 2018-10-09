@@ -158,10 +158,10 @@ int MixedTest(){
     TPZAutoPointer<TPZMHMixedMeshControl> MHMixed;
     {
         TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmeshcoarse);
-//        {
-//            std::ofstream out("gmeshauto.txt");
-//            gmeshauto->Print(out);
-//        }
+        {
+            std::ofstream out("gmeshauto.txt");
+            gmeshauto->Print(out);
+        }
         TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
         TPZVec<int64_t> coarseindices;
         ComputeCoarseIndices(gmeshauto.operator->(), coarseindices);
@@ -190,10 +190,18 @@ int MixedTest(){
         
         InsertMaterialObjects(*mhm);
         
+#ifdef PZDEBUG
+        if(1)
+        {
+            std::ofstream out("MixedMeshControlHDiv.txt");
+            meshcontrol.Print(out);
+        }
+#endif
         meshcontrol.SetInternalPOrder(2);
         meshcontrol.SetSkeletonPOrder(1);
         
         meshcontrol.DivideSkeletonElements(0);
+//        meshcontrol.DivideBoundarySkeletonElements();
         
 //            meshcontrol.SetHybridize(true);
         
