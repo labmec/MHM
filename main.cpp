@@ -150,6 +150,9 @@ int main(int argc, char *argv[])
             TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
         }
 #endif
+        
+        TPZSubCompMesh();
+        
 #ifdef PZDEBUG
         if(1)
         {

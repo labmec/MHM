@@ -79,7 +79,7 @@ add_executable(MHM main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp me
 
 target_link_libraries(MHM pz ${OpenCV_LIBS})
 
-add_executable(MHMMaze mainMaze.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
+add_executable(MHMMaze mainMaze.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp ConfigCasesMaze.h)
 
 target_link_libraries(MHMMaze pz ${OpenCV_LIBS})
 

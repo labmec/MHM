@@ -15,16 +15,18 @@
 #include "pzbuildmultiphysicsmesh.h"
 
 #include "TPZSSpStructMatrix.h"
-
-#ifndef USING_MKL
 #include "pzskylstrmatrix.h"
-#endif
+//
+//#ifndef USING_MKL
+//#include "pzskylstrmatrix.h"
+//#endif
 
 
 #include "pzlog.h"
 
 #ifdef _AUTODIFF
 #include "fadType.h"
+#include "TPZSkylineNSymStructMatrix.h"
 
 //#define QuietMode // Execution with minimum outputs
 
