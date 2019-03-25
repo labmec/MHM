@@ -77,6 +77,9 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 #include <set>
+#include "pzsolve.h"
+
+#include "TPZPersistenceManager.h"
 
 #define new_identifier
 
@@ -139,9 +142,9 @@ int main(){
     ConfCasesMeze.SetMHMOpenChannel(false);
     ConfCasesMeze.SetVTKName("MHMOmar.vtk");
  
-//    H1Test(ConfCasesMeze);
+    H1Test(ConfCasesMeze);
 //    MixedTest(ConfCasesMeze);
-      MHMTest(ConfCasesMeze);
+ //     MHMTest(ConfCasesMeze);
 
       return 0;
     
@@ -265,15 +268,25 @@ int H1Test(ConfigCasesMaze Conf)
     struct_mat.SetNumThreads(number_threads);
     an->SetStructuralMatrix(struct_mat);
 #endif
-    TPZStepSolver<STATE> step;
-    step.SetDirect(ECholesky);
-    an->SetSolver(step);
+   // TPZStepSolver<STATE> step;
+    //step.SetDirect(ECholesky);
     
     
-    // Solving the LS
+    
+    int neq = cmesh->NEquations();
+    TPZFMatrix<STATE>  cheia(neq,neq, 1.);
+    TPZStepSolver<STATE> step(&cheia);
+    TPZStepSolver<STATE> precond(step);
+    TPZStepSolver<STATE> iterSolver;
+    iterSolver.SetCG(100, precond, 0.0000000000001, 0);
+    
+    an->SetSolver(iterSolver);
+    an->Run();
+    
     an->Assemble();
+    // Solving the LS
     an->Solve();
-    
+    an->Solve();
     // post-processing step
     {
         const int dim = an->Mesh()->Dimension();
