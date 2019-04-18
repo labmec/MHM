@@ -3,11 +3,14 @@
 #include "pzgmesh.h"
 #include "pzmanvector.h"
 #include "TPZMHMeshControl.h"
+#include "TPZMHMixedMeshControl.h"
 #include "TPZVTKGeoMesh.h"
 
 #include "pzelasmat.h"
 #include "TPZElasticity2DHybrid.h"
-#include "pzmat1dlin.h"
+#include "TPZMixedElasticityMaterial.h"
+//#include "pzmat1dlin.h"
+#include "TPZNullMaterial.h"
 #include "pzbndcond.h"
 #include "pzanalysis.h"
 
@@ -15,15 +18,18 @@
 #include "pzskylstrmatrix.h"
 #include "pzstepsolver.h"
 
-#include "TPZAnalyticSolution.h"
-
 #include "meshgen.h"
+
+#include "TPZAnalyticSolution.h"
 
 #ifndef USING_MKL
 #include "pzskylstrmatrix.h"
 #endif
 /// Insert material objects for the MHM Mesh solution
 void InsertMaterialObjects(TPZMHMeshControl &control);
+
+/// Insert material objects for the MHM Mesh solution
+void InsertMaterialObjects(TPZMHMixedMeshControl &control);
 
 /// Insert material objects for the MHM Mesh solution
 void InsertMaterialObjects(TPZCompMesh &control);
@@ -60,27 +66,37 @@ int main(int argc, char *argv[])
     
 #ifdef _AUTODIFF
     example = new TElasticity2DAnalytic;
+    {
+        TElasticity2DAnalytic *elastc_examp = dynamic_cast<TElasticity2DAnalytic *>(example);
+        if(!elastc_examp) DebugStop();
+        elastc_examp->fProblemType = TElasticity2DAnalytic::Etest1;
+        elastc_examp->gOscilatoryElasticity = 1;
+        elastc_examp->fPlaneStress = 0;
+    }
+
 #endif
     TRunConfig Configuration;
     
     // Hard coded setting for Figure 15.
     /// numhdiv - number of h-refinements
-    int k_skel = 1;
-    int j = 5;
-    int n_div = 2<<j;
-    int j_int = 7 - j;
-    int n_div_internal = j_int;
+    int pOrder_skel = 1;
+    int ndiv_coarse = 2;
+    int nel_coarse = 2<<ndiv_coarse;
+    //int j_int = 2 - j;//7-j
+    int n_div_internal = 2;
     Configuration.numHDivisions = n_div_internal;
     /// PolynomialOrder - p-order
-    Configuration.pOrderInternal = 2;
-    Configuration.pOrderSkeleton = k_skel;
+    Configuration.pOrderInternal = pOrder_skel + 1;
+    Configuration.pOrderSkeleton = pOrder_skel;
     Configuration.numDivSkeleton = 0;
-    Configuration.nelxcoarse = n_div;
-    Configuration.nelycoarse = n_div;
+    Configuration.nelxcoarse = nel_coarse;
+    Configuration.nelycoarse = nel_coarse;
     Configuration.Hybridize = 0;
     Configuration.Condensed = 1;
     Configuration.LagrangeMult = 0;
     Configuration.n_threads = 12;
+    Configuration.MHM_HDiv_Elast = true;
+
 
     if (argc == 3)
     {
@@ -122,10 +138,10 @@ int main(int argc, char *argv[])
     
     {
         TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
-        TPZMHMeshControl *mhm = new TPZMHMeshControl(gmeshauto);
+        TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
         mhm->DefinePartitionbyCoarseIndices(coarseindices);
         MHM = mhm;
-        TPZMHMeshControl &meshcontrol = *mhm;
+        TPZMHMixedMeshControl &meshcontrol = *mhm;
         
         meshcontrol.SetLagrangeAveragePressure(Configuration.LagrangeMult);
         
@@ -153,8 +169,6 @@ int main(int argc, char *argv[])
         }
 #endif
         
-        TPZSubCompMesh();
-        
 #ifdef PZDEBUG
         if(1)
         {
@@ -163,6 +177,9 @@ int main(int argc, char *argv[])
         }
 #endif
         
+        Configuration.fGlobalSystemSize = meshcontrol.fGlobalSystemSize;
+        Configuration.fGlobalSystemWithLocalCondensationSize = meshcontrol.fGlobalSystemWithLocalCondensationSize;
+        Configuration.fNumeq = meshcontrol.fNumeq;
         std::cout << "MHM Computational meshes created\n";
 #ifdef PZDEBUG
         if(1)
@@ -170,7 +187,7 @@ int main(int argc, char *argv[])
             std::ofstream gfile("geometry.txt");
             gmesh->Print(gfile);
             
-            std::ofstream out_mhm("MHM_h1.txt");
+            std::ofstream out_mhm("MHM_hdiv.txt");
             meshcontrol.CMesh()->Print(out_mhm);
             
         }
@@ -187,7 +204,7 @@ int main(int argc, char *argv[])
     }
 
     // compute the MHM solution
-    SolveProblem(MHM->CMesh(), MHM->GetMeshes(), example, "MHMElast", Configuration);
+    SolveProblem(MHM->CMesh(), MHM->GetMeshes(), example, "MHMElast_Hdiv", Configuration);
 
     return 0;
 }
@@ -204,13 +221,13 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     control.fMaterialIds.insert(matInterno);
     if(example) material1->SetForcingFunction(example->ForcingFunction());
     
-    TElasticity2DAnalytic *elase_ex = dynamic_cast<TElasticity2DAnalytic *>(example);
-    if(elase_ex) material1->SetElasticityFunction(elase_ex->ConstitutiveLawFunction());
+    TElasticity2DAnalytic *elast_example = dynamic_cast<TElasticity2DAnalytic *>(example);
+    if(elast_example) material1->SetElasticityFunction(elast_example->ConstitutiveLawFunction());
     TPZMaterial * mat1(material1);
     
-    TPZMat1dLin *materialCoarse = new TPZMat1dLin(matCoarse);
-    TPZFNMatrix<1,STATE> xk(2,2,0.),xb(2,2,0.),xc(2,2,0.),xf(2,1,0.);
-    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    TPZNullMaterial *materialCoarse = new TPZNullMaterial(matCoarse);
+    materialCoarse->SetNStateVariables(2);
+    materialCoarse->SetDimension(1);
     
     cmesh.InsertMaterialObject(materialCoarse);
 //    materialCoarse = new TPZMat1dLin(skeleton);
@@ -283,6 +300,108 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
 
 }
 
+void InsertMaterialObjects(TPZMHMixedMeshControl &control)
+{
+    TPZCompMesh &cmesh = control.CMesh();
+    /// criar materiais
+    int dim = cmesh.Dimension();
+    TElasticity2DAnalytic *elastc_examp = dynamic_cast<TElasticity2DAnalytic *>(example);
+    if(!elastc_examp) DebugStop();
+    control.SetProblemType(TPZMHMeshControl::EElasticity2D);
+    
+    STATE Young = 1000., nu = 0.3, fx = 0., fy = 0.;
+    int planeStress = 0; //* @param plainstress = 1 \f$ indicates use of plain stress
+    TPZMixedElasticityMaterial *material1 = new TPZMixedElasticityMaterial(matInterno,Young, nu, fx,fy,planeStress,dim);
+    control.fMaterialIds.insert(matInterno);
+    if(example) material1->SetForcingFunction(example->ForcingFunction());
+    
+    if(elastc_examp)
+    {
+        material1->SetElasticityFunction(elastc_examp->ConstitutiveLawFunction());
+        if(elastc_examp->fPlaneStress)
+        {
+            material1->SetPlaneStress();
+        }
+        else
+        {
+            material1->SetPlaneStrain();
+        }
+    }
+    
+    TPZMaterial * mat1(material1);
+    
+    TPZNullMaterial *materialCoarse = new TPZNullMaterial(matCoarse);
+    materialCoarse->SetNStateVariables(2);
+    materialCoarse->SetDimension(1);
+    
+    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(skeleton);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(secondskeleton);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(matpressure);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
+    
+    
+    
+    //    REAL diff = -1.;
+    //    REAL conv = 0.;
+    //    TPZVec<REAL> convdir(3,0.);
+    //    REAL flux = 8.;
+    //
+    //    material1->SetParameters(diff, conv, convdir);
+    //    material1->SetInternalFlux( flux);
+    
+    cmesh.InsertMaterialObject(mat1);
+    
+    
+    control.SwitchLagrangeMultiplierSign(false);
+    ///Inserir condicao de contorno
+    TPZFMatrix<STATE> val1(2,2,0.), val2(2,1,0.);
+    
+    //BC -1
+    val1(0,0) = 0.;
+    val2.Zero();
+    val1(0,0) = 0;
+    val2(0,0) = 10.;
+    TPZMaterial * BCondD1 = material1->CreateBC(mat1, bc1,dirichlet, val1, val2);
+    if(example) BCondD1->SetForcingFunction(example->Exact());
+    cmesh.InsertMaterialObject(BCondD1);
+    control.fMaterialBCIds.insert(bc1);
+    //BC -2
+    val1.Zero();
+    val2(0,0) = 10.;
+    TPZMaterial * BCondD2 = material1->CreateBC(mat1, bc2,dirichlet, val1, val2);
+    if(example) BCondD2->SetForcingFunction(example->Exact());
+    cmesh.InsertMaterialObject(BCondD2);
+    control.fMaterialBCIds.insert(bc2);
+    
+    //BC -3
+    val1.Zero();
+    val2.Zero();
+    val2(0,0) = 10.;
+    TPZMaterial * BCondD3 = material1->CreateBC(mat1, bc3,dirichlet, val1, val2);
+    if(example) BCondD3->SetForcingFunction(example->Exact());
+    cmesh.InsertMaterialObject(BCondD3);
+    control.fMaterialBCIds.insert(bc3);
+    
+    //BC -4
+    val1(0,0) = 0;
+    val2(0,0) = 10.;
+    TPZMaterial * BCondD4 = material1->CreateBC(mat1, bc4,dirichlet, val1, val2);
+    if(example) BCondD4->SetForcingFunction(example->Exact());
+    cmesh.InsertMaterialObject(BCondD4);
+    control.fMaterialBCIds.insert(bc4);
+    
+    //BC -5: dirichlet nulo
+    TPZMaterial * BCondD5 = material1->CreateBC(mat1, bc5,dirichlet, val1, val2);
+    cmesh.InsertMaterialObject(BCondD5);
+    control.fMaterialBCIds.insert(bc5);
+    
+}
 void InsertMaterialObjects(TPZCompMesh &cmesh)
 {
     /// criar materiais
@@ -291,9 +410,9 @@ void InsertMaterialObjects(TPZCompMesh &cmesh)
     TPZElasticityMaterial *material1 = new TPZElasticityMaterial(matInterno,Young,nu,fx,fy);
     material1->SetPlaneStrain();
     
-    TElasticity2DAnalytic *elase_ex = dynamic_cast<TElasticity2DAnalytic *>(example);
-    if(elase_ex) material1->SetElasticityFunction(elase_ex->ConstitutiveLawFunction());
-
+    if(example) material1->SetForcingFunction(example->ForcingFunction());
+    TElasticity2DAnalytic *example_elast = dynamic_cast<TElasticity2DAnalytic *>(example);
+    if(example_elast) material1->SetElasticityFunction(example_elast->ConstitutiveLawFunction());
 
     TPZMaterial * mat1(material1);
     

@@ -7,7 +7,7 @@
 #include "pzcmesh.h"
 #include "pzfunction.h"
 #include "pzcompel.h"
-
+#include "TPZAnalyticSolution.h"
 #include <string>
 
 class TPZGeoMesh;
@@ -16,10 +16,8 @@ struct TRunConfig;
 
 TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<REAL> &x1, TPZVec<int64_t> &coarseindices, int ndiv);
 
-struct TAnalyticSolution;
-
 /// Solve the problem composed of a multiphysics mesh composed of compmeshes - applies to MHM and MHM-H(div)
-void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TAnalyticSolution *analytic, std::string prefix, TRunConfig config);
+void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TPZAnalyticSolution *analytic, std::string prefix, TRunConfig config);
 
 /// Solve the problem composed of a multiphysics mesh composed of compmeshes - applies to MHM and MHM-H(div)
 void SolveParabolic(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, std::string prefix, TRunConfig config);
@@ -37,6 +35,7 @@ struct TRunConfig
     int LagrangeMult = 0;
     int newline = 0;
     int n_threads = 0;
+    bool MHM_HDiv_Elast = false;
     
     /// number of equations when not condensing anything
     int64_t fGlobalSystemSize = -1;
@@ -76,28 +75,10 @@ struct TRunConfig
 
 typedef void (ExactFunc)(const TPZVec<REAL> &x, TPZVec<STATE> &u, TPZFMatrix<STATE> &gradu);
 
-struct TAnalyticSolution
-{
-    
-    
-    virtual TPZAutoPointer<TPZFunction<STATE> > ForcingFunction() = 0;
-    
-    virtual TPZAutoPointer<TPZFunction<STATE> > ValueFunction() = 0;
-    
-    virtual TPZAutoPointer<TPZFunction<STATE> > ConstitutiveLawFunction() = 0;
-    
-    virtual ExactFunc *Exact() = 0;
-    
-    virtual ~TAnalyticSolution()
-    {
-        
-    }
-};
-
 #include <iostream>
-#include <boost/numeric/odeint.hpp>       // odeint function definitions
+//#include <boost/numeric/odeint.hpp>       // odeint function definitions
 
-using namespace boost::numeric::odeint;
+//using namespace boost::numeric::odeint;
 
 // Defining a shorthand for the type of the mathematical state
 typedef std::vector< double > state_type;
@@ -225,6 +206,30 @@ struct TStreamLineData
 TPZGeoEl *FindEntry(TPZGeoMesh *gmesh);
 
 TStreamLineData ComputeStreamLine(TPZCompMesh *fluxmesh, TPZVec<REAL> &xco);
+
+#include "TPZAnalyticSolution.h"
+
+#ifndef TPZANALYTICSOLUTION
+
+/*
+struct TAnalyticSolution
+{
+    
+    
+    virtual TPZAutoPointer<TPZFunction<STATE> > ForcingFunction() = 0;
+    
+    virtual TPZAutoPointer<TPZFunction<STATE> > ValueFunction() = 0;
+    
+    virtual TPZAutoPointer<TPZFunction<STATE> > ConstitutiveLawFunction() = 0;
+    
+    virtual ExactFunc *Exact() = 0;
+    
+    virtual ~TAnalyticSolution()
+    {
+        
+    }
+};
+
 
 #ifdef _AUTODIFF
 
@@ -387,6 +392,11 @@ struct TLaplaceExampleSmooth : public TAnalyticSolution
     }
     
 };
+
+
+ #endif
+ 
+ */
 
 #endif
 

@@ -28,6 +28,9 @@
 #include "fadType.h"
 #include "TPZSkylineNSymStructMatrix.h"
 
+
+#ifndef TPZANALYTICSOLUTION
+
 //#define QuietMode // Execution with minimum outputs
 
 static FADFADREAL FADsin(FADFADREAL x)
@@ -142,8 +145,8 @@ void TElasticityExample1::ElasticDummy(const TPZVec<REAL> &x, TPZVec<STATE> &res
 TPZAutoPointer<TPZFunction<STATE> > TElasticityExample1::ConstitutiveLawFunction()
 {
     TPZAutoPointer<TPZFunction<STATE> > result;
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(TElasticityExample1::ElasticDummy);
-    dummy->SetPolynomialOrder(4);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(TElasticityExample1::ElasticDummy,4);
+    //dummy->SetPolynomialOrder(4);
     result = TPZAutoPointer<TPZFunction<STATE> >(dummy);
     return result;
 }
@@ -295,16 +298,16 @@ void TElasticityExample1::DivSigma(const TPZVec<TVar> &x, TPZVec<TVar> &divsigma
 
 TPZAutoPointer<TPZFunction<STATE> > TElasticityExample1::ForcingFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
 }
 
 TPZAutoPointer<TPZFunction<STATE> > TElasticityExample1::ValueFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
     
@@ -445,16 +448,16 @@ void TLaplaceExample1::DivSigma(const TPZVec<TVar> &x, TVar &divsigma)
 
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExample1::ForcingFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
 }
 
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExample1::ValueFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
     
@@ -463,8 +466,8 @@ TPZAutoPointer<TPZFunction<STATE> > TLaplaceExample1::ValueFunction()
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExample1::ConstitutiveLawFunction()
 {
     TPZAutoPointer<TPZFunction<STATE> > result;
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(PermeabilityDummy);
-    dummy->SetPolynomialOrder(4);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(PermeabilityDummy,4);
+    //dummy->SetPolynomialOrder(4);
     result = TPZAutoPointer<TPZFunction<STATE> >(dummy);
     return result;
     
@@ -591,16 +594,16 @@ void TLaplaceExampleSmooth::DivSigma(const TPZVec<TVar> &x, TVar &divsigma)
 
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExampleSmooth::ForcingFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Force,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
 }
 
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExampleSmooth::ValueFunction()
 {
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU);
-    dummy->SetPolynomialOrder(5);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(GradU,5);
+    //dummy->SetPolynomialOrder(5);
     TPZAutoPointer<TPZFunction<STATE> > result(dummy);
     return result;
     
@@ -609,12 +612,14 @@ TPZAutoPointer<TPZFunction<STATE> > TLaplaceExampleSmooth::ValueFunction()
 TPZAutoPointer<TPZFunction<STATE> > TLaplaceExampleSmooth::ConstitutiveLawFunction()
 {
     TPZAutoPointer<TPZFunction<STATE> > result;
-    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(PermeabilityDummy);
-    dummy->SetPolynomialOrder(4);
+    TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(PermeabilityDummy,4);
+    //dummy->SetPolynomialOrder(4);
     result = TPZAutoPointer<TPZFunction<STATE> >(dummy);
     return result;
     
 }
+
+#endif
 
 #endif
 
@@ -707,11 +712,16 @@ TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<R
     }
 #endif
     
-    
+#ifdef PZDEBUG
+    {
+        std::ofstream file("GMeshFred2.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+    }
+#endif
     return gmesh;
 }
 
-void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TAnalyticSolution *analytic, std::string prefix, TRunConfig config)
+void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TPZAnalyticSolution *analytic, std::string prefix, TRunConfig config)
 {
     //calculo solution
     bool shouldrenumber = true;
@@ -787,7 +797,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     }
     if (analytic)
     {
-        an.SetExact(analytic->Exact());
+        an.SetExact(analytic->ExactSolution());
     }
     if (mat->NStateVariables() == 2)
     {
@@ -814,7 +824,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     
     if(analytic)
     {
-        TPZVec<REAL> errors(3,0.);
+        TPZManVector<REAL> errors(4,0.);
         an.SetThreadsForError(config.n_threads);
 //        an.SetExact(analytic);
         an.PostProcessError(errors,false);
@@ -824,7 +834,13 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         filename << prefix << "Errors.txt";
         std::ofstream out (filename.str(),std::ios::app);
         config.InlinePrint(out);
-        out <<  " Energy " << errors[0] << " L2 " << errors[1] << " H1 " << errors[2] << std::endl;
+        if(config.MHM_HDiv_Elast)
+        {
+            out <<  " Energy " << errors[1] << " L2 " << errors[3] << " EnergiaExata " << errors[6] << std::endl;
+        }else{
+            out <<  " Energy " << errors[0] << " L2 " << errors[1] << " H1 " << errors[2] << " EnergiaExata " << errors[3] << std::endl;
+        }
+        
 //        if (config.newline) {
         out << std::endl;
 //        }
@@ -949,6 +965,10 @@ TPZGeoEl *FindEntry(TPZGeoMesh *gmesh)
     return 0;
 }
 
+
+#include <boost/numeric/odeint.hpp>       // odeint function definitions
+
+using namespace boost::numeric::odeint;
 
 
 
