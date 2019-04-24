@@ -101,3 +101,6 @@ add_executable(MHM_Compare MHM_Compare.cpp TPZMatLaplacianHybrid.h TPZMatLaplaci
 
 target_link_libraries(MHM pz)
 
+#Enabling nightly tests
+ENABLE_TESTING()
+include(CTest)
