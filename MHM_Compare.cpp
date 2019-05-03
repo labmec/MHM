@@ -174,7 +174,7 @@ std::vector <int64_t> ExtractArguments(int argc, char *argv[]);
 
 TPZFMatrix<REAL> gPorous(500,100,0.);
 
-TAnalyticSolution *example = 0;
+TPZAnalyticSolution *example = 0;
 
 int main(int argc, char *argv[])
 {
@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
                 if (!mixed) {
                     DebugStop();
                 }
-                TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability);
+                TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability,0);
                 dummy->SetPolynomialOrder(0);
                 TPZAutoPointer<TPZFunction<STATE> > func(dummy);
                 mixed->SetPermeabilityFunction(func);
