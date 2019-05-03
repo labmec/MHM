@@ -710,7 +710,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     material1->SetParameters(1., 0.);
     if(!example)
     {
-        TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability);
+        TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability,0);
         dummy->SetPolynomialOrder(0);
         TPZAutoPointer<TPZFunction<STATE> > func(dummy);
         material1->SetPermeabilityFunction(func);
@@ -760,7 +760,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     
     //BC -2
 	TPZMaterial * BCondD2 = material1->CreateBC(mat1, bc2,dirichlet, val1, val2);
-    TPZAutoPointer<TPZFunction<STATE> > bcmatDirichlet2 = new TPZDummyFunction<STATE>(DirichletValidacao);
+    TPZAutoPointer<TPZFunction<STATE> > bcmatDirichlet2 = new TPZDummyFunction<STATE>(DirichletValidacao,0);
     BCondD2->SetForcingFunction(bcmatDirichlet2);
     if (example) {
         BCondD2->SetForcingFunction(example->ValueFunction());
@@ -783,7 +783,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     
     //BC -4
 	TPZMaterial * BCondD4 = material1->CreateBC(mat1, bc4,dirichlet, val1, val2);
-    TPZAutoPointer<TPZFunction<STATE> > bcmatDirichlet4 = new TPZDummyFunction<STATE>(DirichletValidacao);
+    TPZAutoPointer<TPZFunction<STATE> > bcmatDirichlet4 = new TPZDummyFunction<STATE>(DirichletValidacao,0);
     BCondD4->SetForcingFunction(bcmatDirichlet4);
     if (example) {
         BCondD4->SetForcingFunction(example->ValueFunction());
@@ -815,7 +815,7 @@ void InsertMaterialObjects(TPZMHMixedMeshControl &control)
     mat->SetPermeability(1.);
     if(!example)
     {
-        TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability);
+        TPZDummyFunction<STATE> *dummy = new TPZDummyFunction<STATE>(Permeability,0);
         dummy->SetPolynomialOrder(0);
         TPZAutoPointer<TPZFunction<STATE> > func(dummy);
         mat->SetPermeabilityFunction(func);
