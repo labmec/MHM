@@ -62,8 +62,12 @@ int main(int argc, char *argv[])
 #ifdef LOG4CXX
     InitializePZLOG();
 #endif
-    TExceptionManager except;
     
+
+    TExceptionManager except;
+
+for(int j=1; j<6; j++)
+{
 #ifdef _AUTODIFF
     example = new TElasticity2DAnalytic;
     {
@@ -80,10 +84,10 @@ int main(int argc, char *argv[])
     // Hard coded setting for Figure 15.
     /// numhdiv - number of h-refinements
     int pOrder_skel = 1;
-    int ndiv_coarse = 2;
+    int ndiv_coarse = j;
     int nel_coarse = 2<<ndiv_coarse;
     //int j_int = 2 - j;//7-j
-    int n_div_internal = 2;
+    int n_div_internal = 7-j;
     Configuration.numHDivisions = n_div_internal;
     /// PolynomialOrder - p-order
     Configuration.pOrderInternal = pOrder_skel + 1;
@@ -205,7 +209,8 @@ int main(int argc, char *argv[])
 
     // compute the MHM solution
     SolveProblem(MHM->CMesh(), MHM->GetMeshes(), example, "MHMElast_Hdiv", Configuration);
-
+    
+}
     return 0;
 }
 
