@@ -73,10 +73,10 @@ int main(int argc, char *argv[])
     // Hard coded setting for Figure 15.
     /// numhdiv - number of h-refinements
     int pOrder_skel = 0;
-    int ndiv_coarse = 4;
+    int ndiv_coarse = 2;
     int nel_coarse = 2<<ndiv_coarse;
     //int j_int = 2 - j;//7-j
-    int n_div_internal = 2;//7 - ndiv_coarse;
+    int n_div_internal = 4;//7 - ndiv_coarse;
     Configuration.numHDivisions = n_div_internal;
     /// PolynomialOrder - p-order
     Configuration.pOrderInternal = 2;//pOrder_skel + 1;
