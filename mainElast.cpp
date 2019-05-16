@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     
     // Hard coded setting for Figure 15.
     /// numhdiv - number of h-refinements
-    int pOrder_skel = 0;
+    int pOrder_skel = 1;
     int ndiv_coarse = 2;
     int nel_coarse = 2<<ndiv_coarse;
     //int j_int = 2 - j;//7-j
@@ -97,6 +97,11 @@ int main(int argc, char *argv[])
         Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
     }
     HDivPiola = 1;
+    
+    if(Configuration.pOrderSkeleton <= 0 || Configuration.pOrderInternal <= 0)
+    {
+        DebugStop();
+    }
 
     if(0)
     {
