@@ -824,7 +824,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     
     if(analytic)
     {
-        TPZManVector<REAL> errors(4,0.);
+        TPZManVector<REAL> errors(7,0.);
         an.SetThreadsForError(config.n_threads);
 //        an.SetExact(analytic);
         an.PostProcessError(errors,false);
@@ -833,12 +833,21 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         std::stringstream filename;
         filename << prefix << "Errors.txt";
         std::ofstream out (filename.str(),std::ios::app);
+        
+        if(config.nelxcoarse==4){//na primeira divisao da malha coarse
+            out<<std::endl;
+            out<<"PARA k_Order = " <<config.pOrderSkeleton << std::endl;
+            out<<std::endl;
+        }
+        
         config.InlinePrint(out);
         if(config.MHM_HDiv_Elast)
         {
-            out <<  " Energy " << errors[1] << " L2 " << errors[3] << " EnergiaExata " << errors[6] << std::endl;
+            out<<std::endl;
+            out << "Energy_stress = " << errors[1] << " L2_displacement = " << errors[3] << " L2_stress = " << errors[0] << " L2_Div(stress) = " << errors[2] << " L2_rotation = " << errors[4] << " L2_asym = " << errors[5] <<" ExactEnergy_displacement = " << errors[6] << std::endl;
         }else{
-            out <<  " Energy " << errors[0] << " L2 " << errors[1] << " H1 " << errors[2] << " EnergiaExata " << errors[3] << std::endl;
+            out<<std::endl;
+            out << "Energy_stress = " <<errors[0] << " L2_displacement = " << errors[1] << " H1_displacement = " << errors[2] << " L2_stress = " << errors[4] << " ExactEnergy_displacement = " << errors[3] << std::endl;
         }
         
 //        if (config.newline) {
