@@ -100,6 +100,11 @@ for(int k=1; k<3; k++){
         Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
     }
     HDivPiola = 1;
+    
+    if(Configuration.pOrderSkeleton <= 0 || Configuration.pOrderInternal <= 0)
+    {
+        DebugStop();
+    }
 
     if(0)
     {
