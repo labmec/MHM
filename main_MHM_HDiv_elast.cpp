@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     TExceptionManager except;
 
 for(int k=1; k<3; k++){
-    for(int j=1; j<6; j++){
+    for(int j=0; j<5; j++){
     
     #ifdef _AUTODIFF
         example = new TElasticity2DAnalytic;
@@ -88,10 +88,10 @@ for(int k=1; k<3; k++){
         int ndiv_coarse = j;
         int nel_coarse = 2<<ndiv_coarse;
         //int j_int = 2 - j;//7-j
-        int n_div_internal = 7-j;
+        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
         Configuration.numHDivisions = n_div_internal;
         /// PolynomialOrder - p-order
-        Configuration.pOrderInternal = pOrder_skel + 1;
+        Configuration.pOrderInternal = pOrder_skel;
         Configuration.pOrderSkeleton = pOrder_skel;
         Configuration.numDivSkeleton = 0;
         Configuration.nelxcoarse = nel_coarse;
@@ -99,7 +99,7 @@ for(int k=1; k<3; k++){
         Configuration.Hybridize = 0;
         Configuration.Condensed = 1;
         Configuration.LagrangeMult = 0;
-        Configuration.n_threads = 12;
+        Configuration.n_threads = 8;
         Configuration.MHM_HDiv_Elast = true;
 
 

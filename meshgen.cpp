@@ -834,7 +834,12 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         filename << prefix << "Errors.txt";
         std::ofstream out (filename.str(),std::ios::app);
         
-        if(config.nelxcoarse==4){//na primeira divisao da malha coarse
+        if(config.nelxcoarse==2 && config.pOrderSkeleton==1){//na primeira divisao da malha coarse
+            out<<std::endl;
+            out<<" --------- PARA n_div_Interno = " <<config.numHDivisions << " ----------"<<std::endl;
+        }
+        
+        if(config.nelxcoarse==2){//na primeira divisao da malha coarse
             out<<std::endl;
             out<<"PARA k_Order = " <<config.pOrderSkeleton << std::endl;
             out<<std::endl;
