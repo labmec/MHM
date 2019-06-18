@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
 
     TExceptionManager except;
 
-for(int k = 1; k<2; k++){
-    for(int j=0; j<2; j++){
+//for(int k = 1; k<2; k++){
+//    for(int j=0; j<2; j++){
     
     #ifdef _AUTODIFF
         example = new TElasticity2DAnalytic;
@@ -82,26 +82,48 @@ for(int k = 1; k<2; k++){
     #endif
         TRunConfig Configuration;
         
-        // Hard coded setting for Figure 15.
-        /// numhdiv - number of h-refinements
-        int pOrder_skel = k;
-        int ndiv_coarse = j;
+//        // Hard coded setting for Figure 15.
+//        /// numhdiv - number of h-refinements
+//        int pOrder_skel = k;
+//        int ndiv_coarse = j;
+//        int nel_coarse = 2<<ndiv_coarse;
+//        //int j_int = 2 - j;//7-j
+//        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
+//        Configuration.numHDivisions = n_div_internal;
+//        /// PolynomialOrder - p-order
+//        Configuration.pOrderInternal = pOrder_skel + 0;
+//        Configuration.pOrderSkeleton = pOrder_skel;
+//        Configuration.numDivSkeleton = 0;
+//        Configuration.nelxcoarse = nel_coarse;
+//        Configuration.nelycoarse = nel_coarse;
+//        Configuration.Hybridize = 0;
+//        Configuration.Condensed = 1;
+//        Configuration.LagrangeMult = 0;
+//        Configuration.n_threads = 8;
+//        Configuration.MHM_HDiv_Elast = true;
+    
+    //argv: mhmelast_exec.txt
+    if(argc == 6)
+    {
+        int ndiv_coarse = atoi(argv[1]);
         int nel_coarse = 2<<ndiv_coarse;
-        //int j_int = 2 - j;//7-j
-        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
-        Configuration.numHDivisions = n_div_internal;
-        /// PolynomialOrder - p-order
-        Configuration.pOrderInternal = pOrder_skel + 0;
-        Configuration.pOrderSkeleton = pOrder_skel;
-        Configuration.numDivSkeleton = 0;
         Configuration.nelxcoarse = nel_coarse;
         Configuration.nelycoarse = nel_coarse;
+        Configuration.pOrderSkeleton = atoi(argv[2]);
+        Configuration.pOrderInternal = atoi(argv[3]);
+        Configuration.numHDivisions = atoi(argv[4]);
+        Configuration.numDivSkeleton = atoi(argv[5]);
         Configuration.Hybridize = 0;
         Configuration.Condensed = 1;
         Configuration.LagrangeMult = 0;
         Configuration.n_threads = 8;
         Configuration.MHM_HDiv_Elast = true;
-
+        
+    }
+    else
+    {
+        std::cout << "Executing using internal hard-code variables \n";
+    }
 
         if (argc == 3)
         {
@@ -211,8 +233,8 @@ for(int k = 1; k<2; k++){
         // compute the MHM solution
         SolveProblem(MHM->CMesh(), MHM->GetMeshes(), example, "MHMElast_Hdiv", Configuration);
         
-    }//fim_k
-}//fim_j
+//    }//fim_k
+//}//fim_j
     return 0;
 }
 
