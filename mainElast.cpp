@@ -58,16 +58,8 @@ int main(int argc, char *argv[])
 #endif
 //    TExceptionManager except;
 
-    int n_Order, k_skel, num_Refinament;
-    std::cout << "Entre com a ordem polinomial do macro elemento (k_skel): ";
-    std::cin >> k_skel;
-    std::cout << "Entre com a ordem polinomial adicional interna (n_Order = 0, 1, 2, ou 3): ";
-    std::cin >> n_Order;
-    std::cout << "Entre com o número de refinementos h internos (num_Refinament = 1, 2, 3, ou 4): ";
-    std::cin >> num_Refinament;
-    
-for(int k=k_skel; k<k_skel+1; k++){
-    for(int j=0; j<6; j++){
+for(int k=1; k<2; k++){
+    for(int j=0; j<2; j++){
         
 #ifdef _AUTODIFF
     example = new TElasticity2DAnalytic;
@@ -87,10 +79,10 @@ for(int k=k_skel; k<k_skel+1; k++){
     int ndiv_coarse = j;
     int nel_coarse = 2<<ndiv_coarse;
     //int j_int = 2 - j;//7-j
-    int n_div_internal = num_Refinament;//7-j (7 - ndiv_coarse);
+    int n_div_internal = 1;//7-j (7 - ndiv_coarse);
     Configuration.numHDivisions = n_div_internal;
     /// PolynomialOrder - p-order
-    Configuration.pOrderInternal = pOrder_skel + n_Order;
+    Configuration.pOrderInternal = pOrder_skel + 1;
     Configuration.pOrderSkeleton = pOrder_skel;
     Configuration.numDivSkeleton = 0;
     Configuration.nelxcoarse = nel_coarse;

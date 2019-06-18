@@ -834,11 +834,11 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         filename << prefix << "_Errors"<<"_Ksk"<<config.pOrderSkeleton<<"_Kin"<<config.pOrderInternal<<"_L"<<config.numHDivisions<<".txt";
         std::ofstream out (filename.str(),std::ios::app);
         
-        if(config.nelxcoarse==2 && config.pOrderSkeleton==1){//na primeira divisao da malha coarse
-            out<<std::endl;
-            out<<"---- PARA k_skel = " <<config.pOrderSkeleton <<", k_int = " <<config.pOrderInternal<<" E h DIVISOES INTERNAS L = " <<config.numHDivisions << " ------"<<std::endl;
-            out<<std::endl;
-        }
+//        if(config.nelxcoarse==2 && config.pOrderSkeleton==1){//na primeira divisao da malha coarse
+//            out<<std::endl;
+//            out<<"---- PARA k_skel = " <<config.pOrderSkeleton <<", k_int = " <<config.pOrderInternal<<" E h DIVISOES INTERNAS L = " <<config.numHDivisions << " ------"<<std::endl;
+//            out<<std::endl;
+//        }
         
 //        if(config.nelxcoarse==2){//na primeira divisao da malha coarse
 //            out<<std::endl;
@@ -846,6 +846,9 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
 //            out<<std::endl;
 //        }
         
+        out<<std::endl;
+        out<<"---- DADOS DOS ERROS PARA A CONFIGURACAO ---- ";
+        out<<std::endl;
         config.InlinePrint(out);
         if(config.MHM_HDiv_Elast)
         {
