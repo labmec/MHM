@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     
     
     {
-//        TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
+        TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
         TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
         
         mhm->DefinePartitionbyCoarseIndices(coarseindices);
@@ -199,7 +199,6 @@ int main(int argc, char *argv[])
         meshcontrol.SetSkeletonPOrder(Configuration.pOrderSkeleton);
 
         meshcontrol.DivideSkeletonElements(Configuration.numDivSkeleton);
-        return 0;
         if(Configuration.Hybridize)
         {
             meshcontrol.SetHybridize(true);
@@ -209,10 +208,9 @@ int main(int argc, char *argv[])
         if (Configuration.Condensed == 0) {
             substructure = false;
         }
-        return 0;
         meshcontrol.BuildComputationalMesh(substructure);
 #ifdef PZDEBUG
-        if(1)
+        if(0)
         {
             std::ofstream file("GMeshControl.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
@@ -220,7 +218,7 @@ int main(int argc, char *argv[])
 #endif
         
 #ifdef PZDEBUG
-        if(1)
+        if(0)
         {
             std::ofstream out("MHMMeshControl.txt");
             meshcontrol.Print(out);
@@ -232,7 +230,7 @@ int main(int argc, char *argv[])
         Configuration.fNumeq = meshcontrol.fNumeq;
         std::cout << "MHM Computational meshes created\n";
 #ifdef PZDEBUG
-        if(1)
+        if(0)
         {
             std::ofstream gfile("geometry.txt");
             gmesh->Print(gfile);

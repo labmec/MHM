@@ -28,10 +28,9 @@
 #include "fadType.h"
 #include "TPZSkylineNSymStructMatrix.h"
 
+#define QuietMode // Execution with minimum outputs
 
 #ifndef TPZANALYTICSOLUTION
-
-//#define QuietMode // Execution with minimum outputs
 
 static FADFADREAL FADsin(FADFADREAL x)
 {
@@ -669,7 +668,7 @@ TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<R
     }
     coarseindices.resize(elcount);
     
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
     {
         std::ofstream file("GMeshFred.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
@@ -712,7 +711,7 @@ TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<R
     }
 #endif
     
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
     {
         std::ofstream file("GMeshFred2.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
@@ -758,6 +757,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     TPZBuildMultiphysicsMesh::TransferFromMultiPhysics(compmeshes, cmesh);
     
 #ifdef PZDEBUG
+    if(0)
     {
         std::ofstream out(prefix+"_MeshWithSol.txt");
         cmesh->Print(out);
