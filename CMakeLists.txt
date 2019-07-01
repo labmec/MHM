@@ -25,8 +25,8 @@ IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
-       find_package(OpenCV REQUIRED)
 ENDIF (WIN32)
+
 
 IF(APPLE)
    # Mac OS X specific code
@@ -78,19 +78,19 @@ endif()
 
 add_executable(MHM main.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
-target_link_libraries(MHM pz ${OpenCV_LIBS})
+target_link_libraries(MHM pz )
 
 add_executable(MHM_HDiv main_MHM_HDiv.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
-target_link_libraries(MHM_HDiv pz ${OpenCV_LIBS})
+target_link_libraries(MHM_HDiv pz )
 
 add_executable(MHM_HDiv_elast main_MHM_HDiv_elast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
-target_link_libraries(MHM_HDiv_elast pz ${OpenCV_LIBS})
+target_link_libraries(MHM_HDiv_elast pz )
 
 #add_executable(MHMMaze mainMaze.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp ConfigCasesMaze.h)
 
-#target_link_libraries(MHMMaze pz ${OpenCV_LIBS})
+#target_link_libraries(MHMMaze pz)
 
 add_executable(MHMElast mainElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
