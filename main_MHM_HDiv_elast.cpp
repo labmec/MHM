@@ -63,44 +63,44 @@ int main(int argc, char *argv[])
     InitializePZLOG();
 #endif
     
-
-    TExceptionManager except;
-
-//for(int k = 1; k<2; k++){
-//    for(int j=0; j<2; j++){
     
-    #ifdef _AUTODIFF
-        example = new TElasticity2DAnalytic;
-        {
-            TElasticity2DAnalytic *elastc_examp = dynamic_cast<TElasticity2DAnalytic *>(example);
-            if(!elastc_examp) DebugStop();
-            elastc_examp->fProblemType = TElasticity2DAnalytic::Etest1;
-            elastc_examp->gOscilatoryElasticity = 1;
-            elastc_examp->fPlaneStress = 0;
-        }
-
-    #endif
-        TRunConfig Configuration;
-        
-//        // Hard coded setting for Figure 15.
-//        /// numhdiv - number of h-refinements
-//        int pOrder_skel = k;
-//        int ndiv_coarse = j;
-//        int nel_coarse = 2<<ndiv_coarse;
-//        //int j_int = 2 - j;//7-j
-//        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
-//        Configuration.numHDivisions = n_div_internal;
-//        /// PolynomialOrder - p-order
-//        Configuration.pOrderInternal = pOrder_skel + 0;
-//        Configuration.pOrderSkeleton = pOrder_skel;
-//        Configuration.numDivSkeleton = 0;
-//        Configuration.nelxcoarse = nel_coarse;
-//        Configuration.nelycoarse = nel_coarse;
-//        Configuration.Hybridize = 0;
-//        Configuration.Condensed = 1;
-//        Configuration.LagrangeMult = 0;
-//        Configuration.n_threads = 8;
-//        Configuration.MHM_HDiv_Elast = true;
+    TExceptionManager except;
+    
+    //for(int k = 1; k<2; k++){
+    //    for(int j=0; j<2; j++){
+    
+#ifdef _AUTODIFF
+    example = new TElasticity2DAnalytic;
+    {
+        TElasticity2DAnalytic *elastc_examp = dynamic_cast<TElasticity2DAnalytic *>(example);
+        if(!elastc_examp) DebugStop();
+        elastc_examp->fProblemType = TElasticity2DAnalytic::Etest1;
+        elastc_examp->gOscilatoryElasticity = 1;
+        elastc_examp->fPlaneStress = 0;
+    }
+    
+#endif
+    TRunConfig Configuration;
+    
+    //        // Hard coded setting for Figure 15.
+    //        /// numhdiv - number of h-refinements
+    //        int pOrder_skel = k;
+    //        int ndiv_coarse = j;
+    //        int nel_coarse = 2<<ndiv_coarse;
+    //        //int j_int = 2 - j;//7-j
+    //        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
+    //        Configuration.numHDivisions = n_div_internal;
+    //        /// PolynomialOrder - p-order
+    //        Configuration.pOrderInternal = pOrder_skel + 0;
+    //        Configuration.pOrderSkeleton = pOrder_skel;
+    //        Configuration.numDivSkeleton = 0;
+    //        Configuration.nelxcoarse = nel_coarse;
+    //        Configuration.nelycoarse = nel_coarse;
+    //        Configuration.Hybridize = 0;
+    //        Configuration.Condensed = 1;
+    //        Configuration.LagrangeMult = 0;
+    //        Configuration.n_threads = 8;
+    //        Configuration.MHM_HDiv_Elast = true;
     
     //argv: mhmelast_exec.txt
     if(argc == 6)
@@ -120,121 +120,144 @@ int main(int argc, char *argv[])
         Configuration.MHM_HDiv_Elast = true;
         
     }
+    else if (argc == 3)
+    {
+        Configuration.nelxcoarse = atoi(argv[1]);
+        Configuration.nelycoarse = Configuration.nelxcoarse;
+        Configuration.pOrderSkeleton = atoi(argv[2]);
+        Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
+    }
     else
     {
         std::cout << "Executing using internal hard-code variables \n";
+        // Hard coded setting for Figure 15.
+        /// numhdiv - number of h-refinements
+        int k = 1;
+        int j = 1;
+        int pOrder_skel = k;
+        int ndiv_coarse = j;
+        int nel_coarse = 2<<ndiv_coarse;
+        //int j_int = 2 - j;//7-j
+        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
+        Configuration.numHDivisions = n_div_internal;
+        /// PolynomialOrder - p-order
+        Configuration.pOrderInternal = pOrder_skel + 0;
+        Configuration.pOrderSkeleton = pOrder_skel;
+        Configuration.numDivSkeleton = 0;
+        Configuration.nelxcoarse = nel_coarse;
+        Configuration.nelycoarse = nel_coarse;
+        Configuration.Hybridize = 0;
+        Configuration.Condensed = 1;
+        Configuration.LagrangeMult = 0;
+        Configuration.n_threads = 8;
+        Configuration.MHM_HDiv_Elast = true;
     }
+    
+    HDivPiola = 1;
+    
+    if(0)
+    {
+        /// Compute an approximation using an H1 approximation
+        int nx = 40;
+        int porder = 2;
+        std::string prefix = "H1Aprox";
+        
+        TPZAutoPointer<TPZCompMesh> cmeshH1 = ComputeH1Approximation(nx, nx, porder, prefix);
+    }
+    
+    
+    // to avoid singular internal matrices
+    if (Configuration.numDivSkeleton == Configuration.numHDivisions && Configuration.pOrderInternal <= Configuration.pOrderSkeleton) {
+        Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
+    }
+    
+    
+    TPZGeoMesh *gmesh = 0;
+    TPZVec<int64_t> coarseindices;
+    
+    TPZManVector<REAL,3> x0(3,0.),x1(3,1.);
+    x1[2] = 0.;
+    int ndiv = Configuration.numHDivisions;
+    gmesh = MalhaGeomFredQuadrada(Configuration.nelxcoarse, Configuration.nelycoarse, x0, x1, coarseindices, ndiv);
+    
+    TPZAutoPointer<TPZGeoMesh> gmeshauto(gmesh);
+    TPZAutoPointer<TPZMHMeshControl> MHM;
+    
+    
+    {
+//        TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
+        TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
+        
+        mhm->DefinePartitionbyCoarseIndices(coarseindices);
+        MHM = mhm;
+        TPZMHMixedMeshControl &meshcontrol = *mhm;
+        
+        meshcontrol.SetLagrangeAveragePressure(Configuration.LagrangeMult);
+        
+        InsertMaterialObjects(meshcontrol);
+        meshcontrol.SetInternalPOrder(Configuration.pOrderInternal);
+        meshcontrol.SetSkeletonPOrder(Configuration.pOrderSkeleton);
 
-        if (argc == 3)
+        meshcontrol.DivideSkeletonElements(Configuration.numDivSkeleton);
+        return 0;
+        if(Configuration.Hybridize)
         {
-            Configuration.nelxcoarse = atoi(argv[1]);
-            Configuration.nelycoarse = Configuration.nelxcoarse;
-            Configuration.pOrderSkeleton = atoi(argv[2]);
-            Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
+            meshcontrol.SetHybridize(true);
         }
-        HDivPiola = 1;
-
-        if(0)
+        
+        bool substructure = true;
+        if (Configuration.Condensed == 0) {
+            substructure = false;
+        }
+        return 0;
+        meshcontrol.BuildComputationalMesh(substructure);
+#ifdef PZDEBUG
+        if(1)
         {
-            /// Compute an approximation using an H1 approximation
-            int nx = 40;
-            int porder = 2;
-            std::string prefix = "H1Aprox";
-            
-            TPZAutoPointer<TPZCompMesh> cmeshH1 = ComputeH1Approximation(nx, nx, porder, prefix);
+            std::ofstream file("GMeshControl.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
         }
-
+#endif
         
-        // to avoid singular internal matrices
-        if (Configuration.numDivSkeleton == Configuration.numHDivisions && Configuration.pOrderInternal <= Configuration.pOrderSkeleton) {
-            Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
-        }
-
-        
-        TPZGeoMesh *gmesh = 0;
-        TPZVec<int64_t> coarseindices;
-       
-        TPZManVector<REAL,3> x0(3,0.),x1(3,1.);
-        x1[2] = 0.;
-        int ndiv = Configuration.numHDivisions;
-        gmesh = MalhaGeomFredQuadrada(Configuration.nelxcoarse, Configuration.nelycoarse, x0, x1, coarseindices, ndiv);
-
-        TPZAutoPointer<TPZGeoMesh> gmeshauto(gmesh);
-        TPZAutoPointer<TPZMHMeshControl> MHM;
-        
-        
+#ifdef PZDEBUG
+        if(1)
         {
-            TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
-            TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
-            mhm->DefinePartitionbyCoarseIndices(coarseindices);
-            MHM = mhm;
-            TPZMHMixedMeshControl &meshcontrol = *mhm;
-            
-            meshcontrol.SetLagrangeAveragePressure(Configuration.LagrangeMult);
-            
-            InsertMaterialObjects(meshcontrol);
-            
-            meshcontrol.SetInternalPOrder(Configuration.pOrderInternal);
-            meshcontrol.SetSkeletonPOrder(Configuration.pOrderSkeleton);
-            
-            meshcontrol.DivideSkeletonElements(Configuration.numDivSkeleton);
-            if(Configuration.Hybridize)
-            {
-                meshcontrol.SetHybridize(true);
-            }
-            
-            bool substructure = true;
-            if (Configuration.Condensed == 0) {
-                substructure = false;
-            }
-            meshcontrol.BuildComputationalMesh(substructure);
-    #ifdef PZDEBUG
-            if(1)
-            {
-                std::ofstream file("GMeshControl.vtk");
-                TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
-            }
-    #endif
-            
-    #ifdef PZDEBUG
-            if(1)
-            {
-                std::ofstream out("MHMMeshControl.txt");
-                meshcontrol.Print(out);
-            }
-    #endif
-            
-            Configuration.fGlobalSystemSize = meshcontrol.fGlobalSystemSize;
-            Configuration.fGlobalSystemWithLocalCondensationSize = meshcontrol.fGlobalSystemWithLocalCondensationSize;
-            Configuration.fNumeq = meshcontrol.fNumeq;
-            std::cout << "MHM Computational meshes created\n";
-    #ifdef PZDEBUG
-            if(1)
-            {
-                std::ofstream gfile("geometry.txt");
-                gmesh->Print(gfile);
-                
-                std::ofstream out_mhm("MHM_hdiv.txt");
-                meshcontrol.CMesh()->Print(out_mhm);
-                
-            }
-    #endif
-            std::cout << "Number of equations MHM equals " << MHM->CMesh()->NEquations() << std::endl;
-            
+            std::ofstream out("MHMMeshControl.txt");
+            meshcontrol.Print(out);
         }
-        std::string configuration;
+#endif
         
+        Configuration.fGlobalSystemSize = meshcontrol.fGlobalSystemSize;
+        Configuration.fGlobalSystemWithLocalCondensationSize = meshcontrol.fGlobalSystemWithLocalCondensationSize;
+        Configuration.fNumeq = meshcontrol.fNumeq;
+        std::cout << "MHM Computational meshes created\n";
+#ifdef PZDEBUG
+        if(1)
         {
-            std::stringstream sout;
-            sout << "H" << Configuration.numHDivisions << "-P" << Configuration.pOrderInternal;
-            configuration = sout.str();
+            std::ofstream gfile("geometry.txt");
+            gmesh->Print(gfile);
+            
+            std::ofstream out_mhm("MHM_hdiv.txt");
+            meshcontrol.CMesh()->Print(out_mhm);
+            
         }
-
-        // compute the MHM solution
+#endif
+        std::cout << "Number of equations MHM equals " << MHM->CMesh()->NEquations() << std::endl;
+        
+    }
+    std::string configuration;
+    
+    {
+        std::stringstream sout;
+        sout << "H" << Configuration.numHDivisions << "-P" << Configuration.pOrderInternal;
+        configuration = sout.str();
+    }
+    
+    // compute the MHM solution
         SolveProblem(MHM->CMesh(), MHM->GetMeshes(), example, "MHMElast_Hdiv", Configuration);
-        
-//    }//fim_k
-//}//fim_j
+    
+    //    }//fim_k
+    //}//fim_j
     return 0;
 }
 
@@ -242,7 +265,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
 {
     TPZCompMesh &cmesh = control.CMesh();
     /// criar materiais
-//    int dim = cmesh.Dimension();
+    //    int dim = cmesh.Dimension();
     control.SetProblemType(TPZMHMeshControl::EElasticity2D);
     STATE Young = 1000., nu = 0.3, fx = 0., fy = 0.;
     TPZElasticity2DHybrid *material1 = new TPZElasticity2DHybrid(matInterno,Young,nu,fx,fy);
@@ -259,15 +282,15 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     materialCoarse->SetDimension(1);
     
     cmesh.InsertMaterialObject(materialCoarse);
-//    materialCoarse = new TPZMat1dLin(skeleton);
-//    materialCoarse->SetMaterial(xk, xc, xb, xf);
-//    cmesh.InsertMaterialObject(materialCoarse);
-//    materialCoarse = new TPZMat1dLin(secondskeleton);
-//    materialCoarse->SetMaterial(xk, xc, xb, xf);
-//    cmesh.InsertMaterialObject(materialCoarse);
-//    materialCoarse = new TPZMat1dLin(matpressure);
-//    materialCoarse->SetMaterial(xk, xc, xb, xf);
-//    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(skeleton);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(secondskeleton);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
+    //    materialCoarse = new TPZMat1dLin(matpressure);
+    //    materialCoarse->SetMaterial(xk, xc, xb, xf);
+    //    cmesh.InsertMaterialObject(materialCoarse);
     
     
     
@@ -303,7 +326,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     if(example) BCondD2->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD2);
     control.fMaterialBCIds.insert(bc2);
-
+    
     //BC -3
     val1.Zero();
     val2.Zero();
@@ -312,7 +335,7 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     if(example) BCondD3->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD3);
     control.fMaterialBCIds.insert(bc3);
-
+    
     //BC -4
     val1(0,0) = 0;
     val1(1,1) = 1.e9;
@@ -321,12 +344,12 @@ void InsertMaterialObjects(TPZMHMeshControl &control)
     if(example) BCondD4->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD4);
     control.fMaterialBCIds.insert(bc4);
-
+    
     //BC -5: dirichlet nulo
     TPZMaterial * BCondD5 = material1->CreateBC(mat1, bc5,dirichlet, val1, val2);
     cmesh.InsertMaterialObject(BCondD5);
     control.fMaterialBCIds.insert(bc5);
-
+    
 }
 
 void InsertMaterialObjects(TPZMHMixedMeshControl &control)
@@ -442,7 +465,7 @@ void InsertMaterialObjects(TPZCompMesh &cmesh)
     if(example) material1->SetForcingFunction(example->ForcingFunction());
     TElasticity2DAnalytic *example_elast = dynamic_cast<TElasticity2DAnalytic *>(example);
     if(example_elast) material1->SetElasticityFunction(example_elast->ConstitutiveLawFunction());
-
+    
     TPZMaterial * mat1(material1);
     
     
@@ -599,7 +622,7 @@ TPZAutoPointer<TPZCompMesh> ComputeH1Approximation(int nelx, int nely, int porde
     an.DefineGraphMesh(cmeshauto->Dimension(), scalnames, vecnames, plotfile);
     int resolution = 2;
     an.PostProcess(resolution,cmeshauto->Dimension());
-
+    
 #ifdef _AUTODIFF
     std::cout << "Computing errors\n";
     int64_t neq = cmeshauto->NEquations();
@@ -607,7 +630,7 @@ TPZAutoPointer<TPZCompMesh> ComputeH1Approximation(int nelx, int nely, int porde
     TPZVec<REAL> errors(3,0.);
     an.PostProcessError(errors);
     std::cout << "Errors computed " << errors << std::endl;
-
+    
     std::stringstream filename;
     filename << prefix << "Errors.txt";
     std::ofstream out (filename.str(),std::ios::app);

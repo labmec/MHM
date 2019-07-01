@@ -102,6 +102,8 @@ configure_file(porous_scaled.txt porous_scaled.txt COPYONLY)
 
 #target_link_libraries(MHM_Compare pz)
 
+file(COPY mhmelast_exec.txt DESTINATION mhmelast_exec.txt)
+
 #Enabling nightly tests
 ENABLE_TESTING()
 include(CTest)
