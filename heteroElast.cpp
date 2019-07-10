@@ -19,6 +19,7 @@
 #include "TPZAnalyticSolution.h"
 #include "meshgen.h"
 #include "pzgengrid.h"
+#include "pzcheckgeom.h"
 
 #ifndef USING_MKL
 #include "pzskylstrmatrix.h"
@@ -27,22 +28,22 @@
 /// Insert material objects for the MHM Mesh solution
 void InsertMaterialObjects(TPZCompMesh *cmesh);
 
-int ReadFromFile(TPZFMatrix<double> &mat, string path);
-int ReadFromFile2(TPZFMatrix<double> &mat, string path);
+//int ReadFromFile(TPZFMatrix<double> &mat, string path);
+//int ReadFromFile2(TPZFMatrix<double> &mat, string path);
 
-std::pair<double,double> funcE(TPZFMatrix<double> &ElastCoef, TPZFMatrix<double> &PoissonCoef, double x,double y,double min_x, double max_x,double min_y, double max_y, int nx, int ny);
+//std::pair<double,double> funcE(TPZFMatrix<double> &ElastCoef, TPZFMatrix<double> &PoissonCoef, double x,double y,double min_x, double max_x,double min_y, double max_y, int nx, int ny);
 
-TPZFMatrix<double> ElastCoef, PoissonCoef;
-double min_x = 0., max_x = 1., min_y = 0.0, max_y = 1.;
-int nx = 1, ny = 1;
 
-void funcE2(const TPZVec<REAL> &x, TPZVec<STATE> &func, TPZFMatrix<STATE> &deriv)
+
+/*void funcE2(const TPZVec<REAL> &x, TPZVec<STATE> &func, TPZFMatrix<STATE> &deriv)
 {
     std::pair<double,double> val;
     val = funcE(ElastCoef, PoissonCoef, x[0], x[1], min_x, max_x, min_y, max_y, nx, ny);
     func[0] = val.first;
     func[1] = val.second;
-}
+}*/
+
+
 /// Compute an approximation using an H1 approximation
 TPZAutoPointer<TPZCompMesh> ComputeH1Approximation(int nelx, int nely, int porder, std::string prefix);
 
@@ -97,7 +98,8 @@ int main(int argc, char *argv[])
     {
         DebugStop();
     }
-    flag = ReadFromFile( PoissonCoef, path2);
+    flag = ReadFro
+    gmesh =mFile( PoissonCoef, path2);
     if (!flag)
     {
         DebugStop();
@@ -143,8 +145,8 @@ int main(int argc, char *argv[])
     HDivPiola = 1;
 
     TPZVec<int> nx(2,5);
-    nx[0] =512;
-    nx[1] =256;
+    nx[0] =2;
+    nx[1] =1;
     TPZVec<REAL> x0(3,0.), x1(3,0.);
     x1[0]=max_x;
     x1[1]=max_y;
@@ -158,6 +160,9 @@ int main(int argc, char *argv[])
     grid.SetBC(gmesh,5,-2);
     grid.SetBC(gmesh,6,-3);
     grid.SetBC(gmesh,7,-4);
+
+    TPZCheckGeom check(gmesh);
+    check.UniformRefine(7);
 
     {
         std::ofstream out("gmesh.colsvtk");
@@ -180,6 +185,7 @@ int main(int argc, char *argv[])
     TPZAnalysis an(cmesh);
 
     TPZSymetricSpStructMatrix strmat(cmesh);
+    strmat.SetNumThreads(4);
     an.SetStructuralMatrix(strmat);
 
     TPZStepSolver<STATE> solver;
@@ -203,60 +209,8 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-std::pair<double,double> funcE( TPZFMatrix<double> &ElastCoef, TPZFMatrix<double> &PoissonCoef, double x,double y, double min_x, double max_x,double min_y, double max_y, int nx, int ny)
-{
-
-    double delta_x = (max_x - min_x)/nx;
-    double delta_y = (max_y - min_y)/ny;
-
-    int i =  (int) (x/delta_x);
-    int j =  (int) (y/delta_y);
-
-    if(i>=ElastCoef.Rows()){
-        i=ElastCoef.Rows()-1;
-    }
-    if(j>=ElastCoef.Cols()){
-        j=ElastCoef.Cols()-1;
-    }
 
 
-    return std::pair<double,double>(ElastCoef(i,j),PoissonCoef(i,j));
-
-}
-
-
-int ReadFromFile(TPZFMatrix<double> &mat, string path)
-{
-    string line;
-
-    int rows, cols;
-    ifstream myfile (path);
-    if (myfile.is_open())
-    {
-        myfile >> rows >> cols;
-        nx = rows;
-        ny = cols;
-        mat.Redim(rows, cols);
-        for(int i=0; i< rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                myfile >> mat(i, j);
-                //cout << mat(i, j) << endl;
-                if (!myfile) return 0;
-            }
-        }
-
-
-        myfile.close();
-    }
-
-    else
-    {
-        cout << "Unable to open file";
-        return 0;
-    }
-
-    return 1;
-}
 
 
 void InsertMaterialObjects(TPZCompMesh *cmesh)

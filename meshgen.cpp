@@ -1011,3 +1011,91 @@ TStreamLineData ComputeStreamLine(TPZCompMesh *fluxmesh, TPZVec<REAL> &startx)
     
     return observer;
 }
+
+
+std::pair<double,double> funcE( TPZFMatrix<double> &ElastCoef, TPZFMatrix<double> &PoissonCoef, double x,double y, double min_x, double max_x,double min_y, double max_y, int nx, int ny)
+{
+
+    double delta_x = (max_x - min_x)/nx;
+    double delta_y = (max_y - min_y)/ny;
+
+    int i =  (int) (x/delta_x);
+    int j =  (int) (y/delta_y);
+
+    if(i>=ElastCoef.Rows()){
+        i=ElastCoef.Rows()-1;
+    }
+    if(j>=ElastCoef.Cols()){
+        j=ElastCoef.Cols()-1;
+    }
+
+    return std::pair<double,double>(ElastCoef(i,j),PoissonCoef(i,j));
+
+}
+
+TPZFMatrix<double> ElastCoef, PoissonCoef;
+double min_x = 0., max_x = 1., min_y = 0.0, max_y = 1.;
+int nx = 1, ny = 1;
+void funcE2(const TPZVec<REAL> &x, TPZVec<STATE> &func, TPZFMatrix<STATE> &deriv)
+{
+    std::pair<double,double> val;
+    val = funcE(ElastCoef, PoissonCoef, x[0], x[1], min_x, max_x, min_y, max_y, nx, ny);
+    func[0] = val.first;
+    func[1] = val.second;
+}
+
+int ReadFromFile(TPZFMatrix<double> &mat, string path)
+{
+    string line;
+
+    int rows, cols;
+    ifstream myfile (path);
+    if (myfile.is_open())
+    {
+        myfile >> rows >> cols;
+        nx = rows;
+        ny = cols;
+        mat.Redim(rows, cols);
+        for(int i=0; i< rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                myfile >> mat(i, j);
+                //cout << mat(i, j) << endl;
+                if (!myfile) return 0;
+            }
+        }
+
+
+        myfile.close();
+    }
+
+    else
+    {
+        cout << "Unable to open file";
+        return 0;
+    }
+
+    return 1;
+}
+
+
+/// Função para obter os indices dos elementos em um determinado nível
+void GetcoarseID(TPZGeoMesh *gmesh, int nivel, TPZStack<int64_t> &coarseID )
+{
+    int64_t nlen = gmesh->NElements();
+    int dim = gmesh->Dimension();
+    for(int64_t el = 0; el < nlen ; el++)
+    {
+        TPZGeoEl *gel = gmesh->Element(el);
+
+        if (gel->Dimension() != dim)
+        {
+            continue;
+        }
+
+        int level = gel->Level();
+        if(level == nivel)
+        {
+            coarseID.Push(el);
+        }
+    }
+}
