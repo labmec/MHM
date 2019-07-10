@@ -84,10 +84,13 @@ int main(int argc, char *argv[])
     int flag = 0;
     string path1, path2;
 
-
-    path1 = "/home/boness/projetos/MHMBuild/young_modulus.txt";
-    path2 = "/home/boness/projetos/MHMBuild/Poisson_coef.txt";
-
+#ifdef MACOSX
+    path1 = "../young_modulus.txt";
+    path2 = "../Poisson_coef.txt";
+#else
+    path1 = "young_modulus.txt";
+    path2 = "Poisson_coef.txt";
+#endif
 
     flag = ReadFromFile( ElastCoef, path1);
     if (!flag)
@@ -166,7 +169,7 @@ int main(int argc, char *argv[])
     TPZCompMesh *cmesh = new TPZCompMesh(gmesh);
     InsertMaterialObjects(cmesh);
     cmesh->SetAllCreateFunctionsContinuous();
-    cmesh->SetDefaultOrder(3);
+    cmesh->SetDefaultOrder(1);
     cmesh->AutoBuild();
     {
         std::ofstream out("cmesh.vtk");
@@ -195,7 +198,7 @@ int main(int argc, char *argv[])
     scalnames.Push("Poisson");
     vecnames.Push("displacement");
     an.DefineGraphMesh(2,scalnames,vecnames,"saida.vtk");
-    an.PostProcess(4);
+    an.PostProcess(0);
 
     return 0;
 }
