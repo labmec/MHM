@@ -96,7 +96,14 @@ add_executable(MHMElast mainElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHyb
 
 target_link_libraries(MHMElast pz)
 
-configure_file(porous_scaled.txt porous_scaled.txt COPYONLY)
+add_executable(ElasticidadeHetero heteroElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
+
+target_link_libraries(ElasticidadeHetero pz)
+
+
+configure_file(young_modulus.txt young_modulus.txt COPYONLY)
+configure_file(Poisson_coef.txt Poisson_coef.txt COPYONLY)
+
 
 #add_executable(MHM_Compare MHM_Compare.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
