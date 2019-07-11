@@ -98,8 +98,7 @@ int main(int argc, char *argv[])
     {
         DebugStop();
     }
-    flag = ReadFro
-    gmesh =mFile( PoissonCoef, path2);
+    flag = ReadFromFile( PoissonCoef, path2);
     if (!flag)
     {
         DebugStop();

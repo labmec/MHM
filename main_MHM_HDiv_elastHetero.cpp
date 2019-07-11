@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
 
 
     TPZGenGrid grid(nx,x0,x1);
+    grid.SetRefpatternElements(true);
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     //   grid.SetElementType(ETriangle);
     grid.Read(gmesh);
@@ -224,7 +225,7 @@ int main(int argc, char *argv[])
     grid.SetBC(gmesh,7,-4);
 
     TPZCheckGeom check(gmesh);
-    check.UniformRefine(7);
+    check.UniformRefine(5);
 
     int nivel = 2;
     GetcoarseID(gmesh, nivel, coarseindices);

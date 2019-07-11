@@ -28,7 +28,7 @@
 #include "fadType.h"
 #include "TPZSkylineNSymStructMatrix.h"
 
-#define QuietMode // Execution with minimum outputs
+//#define QuietMode // Execution with minimum outputs
 
 #ifndef TPZANALYTICSOLUTION
 
@@ -801,10 +801,15 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     }
     if (mat->NStateVariables() == 2)
     {
+        scalnames.Push("J2");
+        scalnames.Push("I1");
         scalnames.Push("SigmaX");
         scalnames.Push("SigmaY");
         scalnames.Push("TauXY");
-        vecnames.Push("Displacement");
+        scalnames.Push("Young_Modulus");
+        scalnames.Push("Poisson");
+        vecnames.Push("displacement");
+
     }
     else if(mat->NStateVariables() == 1)
     {
