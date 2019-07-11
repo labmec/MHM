@@ -185,13 +185,6 @@ int main(int argc, char *argv[])
     int ndiv = Configuration.numHDivisions;
     //gmesh = MalhaGeomFredQuadrada(Configuration.nelxcoarse, Configuration.nelycoarse, x0, x1, coarseindices, ndiv);
 
-    TPZVec<int> nx(2,5);
-    nx[0] =2;
-    nx[1] =1;
-
-    x1[0]=max_x;
-    x1[1]=max_y;
-    x1[2]=0.0;
 
 
 #ifdef MACOSX
@@ -213,6 +206,15 @@ int main(int argc, char *argv[])
         DebugStop();
     }
 
+    TPZVec<int> nx(2,5);
+    nx[0] =2;
+    nx[1] =1;
+    max_x = 10000.;
+    max_y = 4500.;
+    
+    x1[0]=max_x;
+    x1[1]=max_y;
+    x1[2]=0.0;
 
     TPZGenGrid grid(nx,x0,x1);
     grid.SetRefpatternElements(true);
@@ -225,7 +227,7 @@ int main(int argc, char *argv[])
     grid.SetBC(gmesh,7,-4);
 
     TPZCheckGeom check(gmesh);
-    check.UniformRefine(5);
+    check.UniformRefine(7);
 
     int nivel = 2;
     GetcoarseID(gmesh, nivel, coarseindices);
@@ -380,16 +382,19 @@ void InsertMaterialObjects(TPZMHMixedMeshControl &control)
     TPZFMatrix<STATE> val1(2,2,0.), val2(2,1,0.);
     
     //BC -1
-    val1(0,0) = 1.0e9;
-    val2.Zero();
     val1(0,0) = 0;
-    val2(0,0) = 0.;
-    TPZMaterial * BCondD1 = material1->CreateBC(mat1, bc1,2, val1, val2);
+    val2.Zero();
+    val1(0,0) = 1.e9;
+    val1(1,1) = 0;
+    val2(1,0) = 0.;
+    TPZMaterial * BCondD1 = material1->CreateBC(mat1, bc1, 2, val1, val2);
     if(example) BCondD1->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD1);
     control.fMaterialBCIds.insert(bc1);
     //BC -2
     val1.Zero();
+    val2.Zero();
+    val1(1,1) = 0.;
     val2(0,0) = 10.;
     TPZMaterial * BCondD2 = material1->CreateBC(mat1, bc2,1, val1, val2);
     if(example) BCondD2->SetForcingFunction(example->Exact());
@@ -399,14 +404,16 @@ void InsertMaterialObjects(TPZMHMixedMeshControl &control)
     //BC -3
     val1.Zero();
     val2.Zero();
-    val2(1,0) = 10.;
+    val1(0,0) = 0;
+    val2(1,0) = 20.;
     TPZMaterial * BCondD3 = material1->CreateBC(mat1, bc3,1, val1, val2);
     if(example) BCondD3->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD3);
     control.fMaterialBCIds.insert(bc3);
     
     //BC -4
-    val1(1,1) = 1.0e9;
+    val1.Zero();
+    val1(1,1) = 1.e9;
     val2.Zero();
     TPZMaterial * BCondD4 = material1->CreateBC(mat1, bc4,2, val1, val2);
     if(example) BCondD4->SetForcingFunction(example->Exact());

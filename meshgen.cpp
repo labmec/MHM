@@ -806,6 +806,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         scalnames.Push("SigmaX");
         scalnames.Push("SigmaY");
         scalnames.Push("TauXY");
+        scalnames.Push("SigmaZ");
         scalnames.Push("Young_Modulus");
         scalnames.Push("Poisson");
         vecnames.Push("displacement");

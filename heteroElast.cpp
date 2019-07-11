@@ -106,8 +106,6 @@ int main(int argc, char *argv[])
 
 
 
-    double xx = 100;
-    double yy = 100;
 
     max_x = 10000;
     max_y = 4500;
@@ -173,7 +171,7 @@ int main(int argc, char *argv[])
     TPZCompMesh *cmesh = new TPZCompMesh(gmesh);
     InsertMaterialObjects(cmesh);
     cmesh->SetAllCreateFunctionsContinuous();
-    cmesh->SetDefaultOrder(1);
+    cmesh->SetDefaultOrder(3);
     cmesh->AutoBuild();
     {
         std::ofstream out("cmesh.vtk");
