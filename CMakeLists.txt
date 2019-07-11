@@ -92,6 +92,10 @@ target_link_libraries(MHM_HDiv_elast pz )
 
 #target_link_libraries(MHMMaze pz)
 
+add_executable(MHM_HDiv_elastHetero main_MHM_HDiv_elastHetero.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
+
+target_link_libraries(MHM_HDiv_elastHetero pz )
+
 add_executable(MHMElast mainElast.cpp TPZMatLaplacianHybrid.h TPZMatLaplacianHybrid.cpp meshgen.h meshgen.cpp)
 
 target_link_libraries(MHMElast pz)
