@@ -720,6 +720,116 @@ TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<R
     return gmesh;
 }
 
+TPZGeoMesh *MalhaGeomQuadOuTriang(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<REAL> &x1, TPZVec<int64_t> &coarseindices, int ndiv,int type)
+{
+    TPZGeoMesh *gmesh = new TPZGeoMesh;
+    int dimension = 2;
+    gmesh->SetDimension(dimension);
+    TPZManVector<int,2> nx(2,3);
+    nx[0] = nelx;
+    nx[1] = nely;
+    TPZGenGrid gengrid(nx, x0, x1);
+    if(type==1)
+    {
+        gengrid.SetElementType(ETriangle);
+    }
+    gengrid.SetRefpatternElements(true);
+    gengrid.Read(gmesh, 1);
+    gengrid.SetBC(gmesh, 4, -1);
+    gengrid.SetBC(gmesh, 5, -2);
+    gengrid.SetBC(gmesh, 6, -3);
+    gengrid.SetBC(gmesh, 7, -4);
+    
+    // refine a random element
+    if(0)
+    {
+        TPZManVector<TPZGeoEl *,10> gelsub;
+        int64_t nel = gmesh->NElements();
+        TPZGeoEl *gel = gmesh->Element(rand()%nel);
+        while (gel->Dimension() != gmesh->Dimension()) {
+            gel = gmesh->Element(rand()%nel);
+        }
+        gel->Divide(gelsub);
+        
+    }
+    int64_t nel = gmesh->NElements();
+#ifdef PZDEBUG2
+    {
+        std::ofstream gfile("gmesh_initial.txt");
+        gmesh->Print(gfile);
+    }
+#endif
+    
+    coarseindices.resize(nel);
+    int64_t elcount = 0;
+    for (int64_t el=0; el<nel; el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
+        if (gel->HasSubElement() ||  gel->Dimension() != dimension) {
+            continue;
+        }
+        coarseindices[elcount] = el;
+        elcount++;
+    }
+    coarseindices.resize(elcount);
+    
+#ifdef PZDEBUG2
+    {
+        std::ofstream file("GMeshQuadOuTriang.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+    }
+#endif
+    if(0)
+    {
+        
+        for (int64_t el=0; el<nel; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if (!gel->HasSubElement() &&  gel->Type() == EQuadrilateral) {
+                TPZManVector<TPZGeoEl *,12> subs;
+                gel->Divide(subs);
+            }
+        }
+        nel = gmesh->NElements();
+        
+        for (int64_t el=0; el<nel; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if (!gel->HasSubElement() &&  gel->Type() == EOned) {
+                TPZAutoPointer<TPZRefPattern> refpat = TPZRefPatternTools::PerfectMatchRefPattern(gel);
+                if (!refpat) {
+                    DebugStop();
+                }
+                gel->SetRefPattern(refpat);
+                TPZManVector<TPZGeoEl *,12> subs;
+                gel->Divide(subs);
+            }
+        }
+    }
+    TPZCheckGeom geom(gmesh);
+    geom.UniformRefine(ndiv);
+    //    InsertInterfaceElements(gmesh,1,2);
+#ifdef PZDEBUG2
+    {
+        std::ofstream gfile("gmesh_initial_refined.txt");
+        gmesh->Print(gfile);
+    }
+#endif
+    
+#ifdef LOG4CXX
+    if (logger->isDebugEnabled()) {
+        std::stringstream sout;
+        gmesh->Print(sout);
+        LOGPZ_DEBUG(logger, sout.str())
+    }
+#endif
+    
+#ifdef PZDEBUG2
+    {
+        std::ofstream file("GMeshQuadOuTriang2.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+    }
+#endif
+    return gmesh;
+}
+
 void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TPZAnalyticSolution *analytic, std::string prefix, TRunConfig config)
 {
     //calculo solution
@@ -830,14 +940,17 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     
     if(analytic)
     {
-        TPZManVector<REAL> errors(8,0.);
+        TPZManVector<REAL> errors(7,0.);
         an.SetThreadsForError(config.n_threads);
 //        an.SetExact(analytic);
         an.PostProcessError(errors,false);
         std::cout << prefix << " - ";
         config.ConfigPrint(std::cout) << " errors computed " << errors << std::endl;
         std::stringstream filename;
-        filename << prefix << "_Errors"<<"_Ksk"<<config.pOrderSkeleton<<"_Kin"<<config.pOrderInternal<<"_L"<<config.numHDivisions<<".txt";
+        //imprime o arquivo para cada divisao interna
+//        filename << prefix << "_Errors"<<"_Ksk"<<config.pOrderSkeleton<<"_Kin"<<config.pOrderInternal<<"_L"<<config.numHDivisions<<".txt";
+//        std::ofstream out (filename.str(),std::ios::app);
+        filename << prefix << "_Space_Based"<<"_Ksk"<<config.pOrderSkeleton<<"_Kin"<<config.pOrderInternal<<".txt";
         std::ofstream out (filename.str(),std::ios::app);
         
 //        if(config.nelxcoarse==2 && config.pOrderSkeleton==1){//na primeira divisao da malha coarse
@@ -853,13 +966,14 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
 //        }
         
         out<<std::endl;
-        out<<"---- DADOS DOS ERROS PARA A CONFIGURACAO ---- ";
+        if(config.mesh_type==0) out<<"---- DADOS DOS ERROS PARA A MALHA QUADRANGULAR NA CONFIGURACAO ---- ";
+        if(config.mesh_type==1) out<<"---- DADOS DOS ERROS PARA A MALHA TRIANGULAR NA CONFIGURACAO ---- ";
         out<<std::endl;
         config.InlinePrint(out);
         if(config.MHM_HDiv_Elast)
         {
             out<<std::endl;
-            out << "Energy_stress = " << errors[1] << " L2_displacement = " << errors[3] << " L2_stress = " << errors[0] << " L2_sigma_xx = " << errors[7] << " L2_Div(stress) = " << errors[2] << " L2_rotation = " << errors[4] << " L2_asym = " << errors[5] <<" ExactEnergy_displacement = " << errors[6] << std::endl;
+            out << "Energy_stress = " << errors[1] << " L2_displacement = " << errors[3] << " L2_stress = " << errors[0] << " L2_Div(stress) = " << errors[2] << " L2_rotation = " << errors[4] << " L2_asym = " << errors[5] <<" ExactEnergy_displacement = " << errors[6] << std::endl;
         }else{
             out<<std::endl;
             out << "Energy_stress = " <<errors[0] << " L2_displacement = " << errors[1] << " H1_displacement = " << errors[2] << " L2_stress = " << errors[4] << " L2_sigma_xx = " << errors[5]<< " ExactEnergy_displacement = " << errors[3] << std::endl;

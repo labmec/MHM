@@ -16,6 +16,8 @@ struct TRunConfig;
 
 TPZGeoMesh *MalhaGeomFredQuadrada(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<REAL> &x1, TPZVec<int64_t> &coarseindices, int ndiv);
 
+TPZGeoMesh *MalhaGeomQuadOuTriang(int nelx, int nely, TPZVec<REAL> &x0, TPZVec<REAL> &x1, TPZVec<int64_t> &coarseindices, int ndiv,int type);//0->quad e 1->triang
+
 /// Solve the problem composed of a multiphysics mesh composed of compmeshes - applies to MHM and MHM-H(div)
 void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCompMesh> > compmeshes, TPZAnalyticSolution *analytic, std::string prefix, TRunConfig config);
 
@@ -36,6 +38,7 @@ struct TRunConfig
     int newline = 0;
     int n_threads = 0;
     bool MHM_HDiv_Elast = false;
+    int mesh_type = 0; //0->quadrangular and 1:triangular
     
     /// number of equations when not condensing anything
     int64_t fGlobalSystemSize = -1;
