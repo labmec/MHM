@@ -139,7 +139,6 @@ int main(int argc, char *argv[])
 
 
 
-    HDivPiola = 1;
 
     TPZVec<int> nx(2,5);
     nx[0] =2;

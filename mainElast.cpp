@@ -122,7 +122,6 @@ for(int k=1; k<2; k++){
         Configuration.pOrderSkeleton = atoi(argv[2]);
         Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
     }
-    HDivPiola = 1;
     
     if(Configuration.pOrderSkeleton <= 0 || Configuration.pOrderInternal <= 0)
     {
