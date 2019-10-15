@@ -158,7 +158,6 @@ int main(int argc, char *argv[])
         Configuration.pOrderSkeleton = atoi(argv[2]);
         Configuration.pOrderInternal = Configuration.pOrderSkeleton+1;
     }
-    HDivPiola = 1;
     
     if(0)
     {
