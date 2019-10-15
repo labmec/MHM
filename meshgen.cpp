@@ -1213,7 +1213,7 @@ int ReadFromFile(TPZFMatrix<double> &mat, string path)
         mat.Redim(rows, cols);
         for(int i=0; i< rows; i++) {
             for (int j = 0; j < cols; j++) {
-                myfile >> mat(rows-1-i,j);
+                myfile >> mat(i,cols-1-j);
                 //cout << mat(i, j) << endl;
                 if (!myfile)
                 {
