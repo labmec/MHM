@@ -109,16 +109,25 @@ int main(int argc, char *argv[])
     //        Configuration.MHM_HDiv_Elast = true;
     
     //argv: mhmelast_exec.txt
+    int ndiv_internal = 8;
+    int ndiv_coarse = 3;
+    int ndiv_skeleton = 3;
+    int pOrder_skel = 1;
+    int pOrder_internal = 1;
     if(argc == 6)
     {
-        int ndiv_coarse = atoi(argv[1]);
+        ndiv_coarse = atoi(argv[1]);
         int nel_coarse = 2<<ndiv_coarse;
         Configuration.nelxcoarse = nel_coarse;
-        Configuration.nelycoarse = nel_coarse;
+        Configuration.nelycoarse = nel_coarse/2;
         Configuration.pOrderSkeleton = atoi(argv[2]);
+        pOrder_skel = Configuration.pOrderSkeleton;
         Configuration.pOrderInternal = atoi(argv[3]);
+        pOrder_internal = Configuration.pOrderInternal;
         Configuration.numHDivisions = atoi(argv[4]);
+        ndiv_internal = Configuration.numHDivisions;
         Configuration.numDivSkeleton = atoi(argv[5]);
+        ndiv_skeleton = Configuration.numDivSkeleton;
         Configuration.Hybridize = 0;
         Configuration.Condensed = 1;
         Configuration.LagrangeMult = 0;
@@ -139,19 +148,16 @@ int main(int argc, char *argv[])
         // Hard coded setting for Figure 15.
         /// numhdiv - number of h-refinements
         int k = 1;
-        int j = 1;
-        int pOrder_skel = k;
-        int ndiv_coarse = j;
+        int j = 3;
         int nel_coarse = 2<<ndiv_coarse;
         //int j_int = 2 - j;//7-j
-        int n_div_internal = 1;//7-j (7 - ndiv_coarse);
-        Configuration.numHDivisions = n_div_internal;
+        Configuration.numHDivisions = ndiv_internal;
         /// PolynomialOrder - p-order
-        Configuration.pOrderInternal = pOrder_skel + 0;
+        Configuration.pOrderInternal = pOrder_internal;
         Configuration.pOrderSkeleton = pOrder_skel;
-        Configuration.numDivSkeleton = 0;
+        Configuration.numDivSkeleton = 3;
         Configuration.nelxcoarse = nel_coarse;
-        Configuration.nelycoarse = nel_coarse;
+        Configuration.nelycoarse = nel_coarse/2;
         Configuration.Hybridize = 0;
         Configuration.Condensed = 1;
         Configuration.LagrangeMult = 0;
@@ -159,7 +165,6 @@ int main(int argc, char *argv[])
         Configuration.MHM_HDiv_Elast = true;
     }
     
-    HDivPiola = 1;
     
     if(0)
     {
@@ -190,9 +195,18 @@ int main(int argc, char *argv[])
 #ifdef MACOSX
     std::string path1 = "../young_modulus.txt";
     std::string path2 = "../Poisson_coef.txt";
+    std::string path3 = "../Poisson_coef.txt";
+    path1 = "../Data_13_Set/VE.txt";
+    path2 = "../Data_13_Set/VPoisso.txt";
+    path3 = "../Data_13_Set/Vden.txt";
+
 #else
     std::string path1 = "young_modulus.txt";
     std::string path2 = "Poisson_coef.txt";
+    std::string path3 = "../Poisson_coef.txt";
+    path1 = "Data_13_Set/VE.txt";
+    path2 = "Data_13_Set/VPoisso.txt";
+    path3 = "Data_13_Set/Vden.txt";
 #endif
 
     int flag = ReadFromFile( ElastCoef, path1);
@@ -200,11 +214,30 @@ int main(int argc, char *argv[])
     {
         DebugStop();
     }
+    ElastCoef *= 1.e-6;
+    {
+        std::ofstream out ("Elast.nb");
+        ElastCoef.Print("Elast",out,EMathematicaInput);
+    }
     flag = ReadFromFile( PoissonCoef, path2);
+    {
+        std::ofstream out ("Poisson.nb");
+        PoissonCoef.Print("Poisson",out,EMathematicaInput);
+    }
     if (!flag)
     {
         DebugStop();
     }
+    flag = ReadFromFile( DensityCoef, path3);
+    if (!flag)
+    {
+        DebugStop();
+    }
+    {
+        std::ofstream out ("Density.nb");
+        DensityCoef.Print("Rho",out,EMathematicaInput);
+    }
+
 
     TPZVec<int> nx(2,5);
     nx[0] =2;
@@ -227,9 +260,24 @@ int main(int argc, char *argv[])
     grid.SetBC(gmesh,7,-4);
 
     TPZCheckGeom check(gmesh);
-    check.UniformRefine(7);
+    int nrefine = ndiv_internal;
+    check.UniformRefine(nrefine);
+    
+    {
+        REAL Omega = max_x*max_y/2.;
+        int64_t nel = gmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if(gel->HasSubElement() || gel->Dimension() != 2) continue;
+            REAL area = gel->SideArea(gel->NSides()-1);
+            REAL ratio = Omega/area;
+            ratio = sqrt(ratio);
+            std::cout << "the element side is " << ratio << " fraction of the total length\n";
+            break;
+        }
+    }
 
-    int nivel = 2;
+    int nivel = ndiv_coarse;
     GetcoarseID(gmesh, nivel, coarseindices);
 
     TPZAutoPointer<TPZGeoMesh> gmeshauto(gmesh);
@@ -239,7 +287,6 @@ int main(int argc, char *argv[])
     {
         TPZAutoPointer<TPZGeoMesh> gmeshauto = new TPZGeoMesh(*gmesh);
         TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
-
 
         mhm->DefinePartitionbyCoarseIndices(coarseindices);
         MHM = mhm;
@@ -262,13 +309,11 @@ int main(int argc, char *argv[])
             substructure = false;
         }
         meshcontrol.BuildComputationalMesh(substructure);
-#ifdef PZDEBUG
-        if(0)
+        if(1)
         {
             std::ofstream file("GMeshControl.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
         }
-#endif
         
 #ifdef PZDEBUG
         if(0)
@@ -327,6 +372,9 @@ void InsertMaterialObjects(TPZMHMixedMeshControl &control)
     int planeStress = 0; //* @param plainstress = 1 \f$ indicates use of plain stress
     TPZMixedElasticityMaterial *material1 = new TPZMixedElasticityMaterial(matInterno,Young, nu, fx,fy,planeStress,dim);
 
+    TPZAutoPointer<TPZFunction<STATE>> funcelast = new TPZDummyFunction<STATE> (ForcingFunction,1);
+    material1->SetForcingFunction(funcelast);
+    
     TPZAutoPointer<TPZFunction<STATE>> func = new TPZDummyFunction<STATE> (funcE2, 1);
     material1->SetElasticityFunction(func);
 
@@ -382,40 +430,50 @@ void InsertMaterialObjects(TPZMHMixedMeshControl &control)
     TPZFMatrix<STATE> val1(2,2,0.), val2(2,1,0.);
     
     //BC -1
+    /// mixed : sign 1x = 0 which means tau_xy = 0
+    /// as there is no entry in y , u.1y =0 weakly
     val1(0,0) = 0;
     val2.Zero();
-    val1(0,0) = 1.e9;
+    val1(0,0) = 0;
     val1(1,1) = 0;
     val2(1,0) = 0.;
-    TPZMaterial * BCondD1 = material1->CreateBC(mat1, bc1, 2, val1, val2);
+    TPZMaterial * BCondD1 = material1->CreateBC(mat1, bc1, 0, val1, val2);
     if(example) BCondD1->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD1);
     control.fMaterialBCIds.insert(bc1);
     //BC -2
+    // Neumann condition
+    // sigma_n = (10,0) which means sigx = 10, tau_xy = 0
     val1.Zero();
     val2.Zero();
     val1(1,1) = 0.;
-    val2(0,0) = 10.;
+    val2(0,0) = 0;
     TPZMaterial * BCondD2 = material1->CreateBC(mat1, bc2,1, val1, val2);
     if(example) BCondD2->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD2);
     control.fMaterialBCIds.insert(bc2);
     
     //BC -3
+    // Neumann condition
+    // applied force is (0,20)
+    // sigma_n = (0,20)
     val1.Zero();
     val2.Zero();
     val1(0,0) = 0;
-    val2(1,0) = 20.;
+    val2(1,0) = 0.;
     TPZMaterial * BCondD3 = material1->CreateBC(mat1, bc3,1, val1, val2);
     if(example) BCondD3->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD3);
     control.fMaterialBCIds.insert(bc3);
     
     //BC -4
+    // mixed condition
+    // sigma_n .1_y = 0 -> tau_xy = 0
+    // u_x = 0 weakly
     val1.Zero();
-    val1(1,1) = 1.e9;
+    val1(1,1) = 0;
     val2.Zero();
-    TPZMaterial * BCondD4 = material1->CreateBC(mat1, bc4,2, val1, val2);
+    TPZMaterial * BCondD4 = material1->CreateBC(mat1, bc4,1, val1, val2);
     if(example) BCondD4->SetForcingFunction(example->Exact());
     cmesh.InsertMaterialObject(BCondD4);
     control.fMaterialBCIds.insert(bc4);

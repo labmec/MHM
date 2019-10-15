@@ -919,7 +919,7 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
         scalnames.Push("SigmaZ");
         scalnames.Push("Young_Modulus");
         scalnames.Push("Poisson");
-        vecnames.Push("displacement");
+        vecnames.Push("Displacement");
 
     }
     else if(mat->NStateVariables() == 1)
@@ -931,11 +931,13 @@ void SolveProblem(TPZAutoPointer<TPZCompMesh> cmesh, TPZVec<TPZAutoPointer<TPZCo
     }
     
 #ifndef QuietMode
+    std::cout << "Post processing\n";
 //    an.DefineGraphMesh(cmesh->Dimension()-1, scalnames, vecnames, plotfile1);
     an.DefineGraphMesh(cmesh->Dimension(), scalnames, vecnames, plotfile2);
     int resolution = 0;
 //    an.PostProcess(resolution,cmesh->Dimension()-1);
     an.PostProcess(resolution,cmesh->Dimension());
+    std::cout << "Post processing finished\n";
 #endif
     
     if(analytic)
@@ -1152,14 +1154,46 @@ std::pair<double,double> funcE( TPZFMatrix<double> &ElastCoef, TPZFMatrix<double
     return std::pair<double,double>(ElastCoef(i,j),PoissonCoef(i,j));
 
 }
-
-TPZFMatrix<double> ElastCoef, PoissonCoef;
-double min_x = 0., max_x = 1., min_y = 0.0, max_y = 1.;
 int nx = 1, ny = 1;
+
+std::pair<double,double> funcElast( TPZFMatrix<double> &DensityCoef, double x,double y, double min_x, double max_x,double min_y, double max_y)
+{
+
+    if(nx<=0 || ny <=0)
+    {
+        DebugStop();
+    }
+    double delta_x = (max_x - min_x)/nx;
+    double delta_y = (max_y - min_y)/ny;
+
+    int i =  (int) (x/delta_x);
+    int j =  (int) (y/delta_y);
+
+    if(i>=DensityCoef.Rows()){
+        i=DensityCoef.Rows()-1;
+    }
+    if(j>=DensityCoef.Cols()){
+        j=DensityCoef.Cols()-1;
+    }
+
+    return std::pair<double,double>(0.,-9.81*DensityCoef(i,j));
+
+}
+
+TPZFMatrix<double> ElastCoef, PoissonCoef, DensityCoef;
+double min_x = 0., max_x = 1., min_y = 0.0, max_y = 1.;
 void funcE2(const TPZVec<REAL> &x, TPZVec<STATE> &func, TPZFMatrix<STATE> &deriv)
 {
     std::pair<double,double> val;
     val = funcE(ElastCoef, PoissonCoef, x[0], x[1], min_x, max_x, min_y, max_y, nx, ny);
+    func[0] = val.first;
+    func[1] = val.second;
+}
+
+void ForcingFunction(const TPZVec<REAL> &x, TPZVec<STATE> &func)
+{
+    std::pair<double,double> val;
+    val = funcElast(DensityCoef, x[0], x[1], min_x, max_x, min_y, max_y);
     func[0] = val.first;
     func[1] = val.second;
 }
@@ -1175,12 +1209,16 @@ int ReadFromFile(TPZFMatrix<double> &mat, string path)
         myfile >> rows >> cols;
         nx = rows;
         ny = cols;
+        if(nx <=0 || ny <= 0) DebugStop();
         mat.Redim(rows, cols);
         for(int i=0; i< rows; i++) {
             for (int j = 0; j < cols; j++) {
-                myfile >> mat(i, j);
+                myfile >> mat(rows-1-i,cols-1-j);
                 //cout << mat(i, j) << endl;
-                if (!myfile) return 0;
+                if (!myfile)
+                {
+                    return 0;
+                }
             }
         }
 

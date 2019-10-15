@@ -211,12 +211,14 @@ TPZGeoEl *FindEntry(TPZGeoMesh *gmesh);
 TStreamLineData ComputeStreamLine(TPZCompMesh *fluxmesh, TPZVec<REAL> &xco);
 
 
-extern TPZFMatrix<double> ElastCoef, PoissonCoef;
+extern TPZFMatrix<double> ElastCoef, PoissonCoef, DensityCoef;
 extern double min_x, max_x , min_y , max_y ;
-extern int nx , ny ;
+//extern const int nx , ny ;
 
 std::pair<double,double> funcE(TPZFMatrix<double> &ElastCoef, TPZFMatrix<double> &PoissonCoef, double x,double y,double min_x, double max_x,double min_y, double max_y, int nx, int ny);
 void funcE2(const TPZVec<REAL> &x, TPZVec<STATE> &func, TPZFMatrix<STATE> &deriv);
+void ForcingFunction(const TPZVec<REAL> &x, TPZVec<STATE> &func);
+
 int ReadFromFile(TPZFMatrix<double> &mat, string path);
 
 /// Função para obter os indices dos elementos em um determinado nível
