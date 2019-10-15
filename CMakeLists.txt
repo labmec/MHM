@@ -113,6 +113,7 @@ configure_file(Poisson_coef.txt Poisson_coef.txt COPYONLY)
 
 #target_link_libraries(MHM_Compare pz)
 
+file(COPY mhm_hdiv_heterogeneous_elast_exec.txt DESTINATION .)
 file(COPY mhmelast_exec.txt DESTINATION .)
 file(COPY Data_13_Set DESTINATION .)
 

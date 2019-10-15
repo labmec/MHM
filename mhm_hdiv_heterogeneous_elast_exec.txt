@@ -1,0 +1,14 @@
+% ndiv_coarse porder_skeleton porder_internal ndiv_internal ndiv_skeleton
+./MHM_HDiv_elastHetero 3 1 1 8 3
+./MHM_HDiv_elastHetero 3 1 1 8 0
+./MHM_HDiv_elastHetero 3 1 1 8 1
+./MHM_HDiv_elastHetero 3 1 1 8 2
+./MHM_HDiv_elastHetero 3 2 1 8 3
+./MHM_HDiv_elastHetero 3 2 1 8 0
+./MHM_HDiv_elastHetero 3 2 1 8 1
+./MHM_HDiv_elastHetero 3 2 1 8 2
+% reference approximations
+./MHM_HDiv_elastHetero 5 2 2 8 3
+./MHM_HDiv_elastHetero 5 2 2 9 3
+./MHM_HDiv_elastHetero 5 2 2 9 4
+

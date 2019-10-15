@@ -217,12 +217,12 @@ int main(int argc, char *argv[])
     ElastCoef *= 1.e-6;
     {
         std::ofstream out ("Elast.nb");
-        ElastCoef.Print("Elast",out,EMathematicaInput);
+//        ElastCoef.Print("Elast",out,EMathematicaInput);
     }
     flag = ReadFromFile( PoissonCoef, path2);
     {
         std::ofstream out ("Poisson.nb");
-        PoissonCoef.Print("Poisson",out,EMathematicaInput);
+//        PoissonCoef.Print("Poisson",out,EMathematicaInput);
     }
     if (!flag)
     {
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
     }
     {
         std::ofstream out ("Density.nb");
-        DensityCoef.Print("Rho",out,EMathematicaInput);
+//        DensityCoef.Print("Rho",out,EMathematicaInput);
     }
 
 
